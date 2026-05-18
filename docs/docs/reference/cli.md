@@ -601,7 +601,7 @@ The exact fields vary by command. Common fields include:
 
 For `poly branch delete --json`, when a branch that was the current branch is deleted, the response also includes `"switched_to": "main"`.
 
-For `poly branch merge --json`, a successful merge returns `{ "success": true }`. When conflicts or errors are present, the response includes `"conflicts"` and `"errors"` arrays containing the raw conflict and error objects from the platform.
+For `poly branch merge --json`, a successful merge returns `{ "success": true }`. When conflicts or errors are present, the response includes `"conflicts"` and `"errors"` arrays. Each element is an object (`dict[str, str]`) containing the raw conflict or error fields returned by the platform.
 
 For `poly deployments show --json`, the response includes:
 
