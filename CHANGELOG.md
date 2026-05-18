@@ -1,6 +1,41 @@
 # CHANGELOG
 
 
+## v0.20.2 (2026-05-18)
+
+### Bug Fixes
+
+- Correct merge_branch return type annotations in project.py
+  ([#153](https://github.com/polyai/adk/pull/153),
+  [`1ff1b59`](https://github.com/polyai/adk/commit/1ff1b59464bf1a3ace5fbbcfa8e174ff06803900))
+
+## Summary
+
+Fixes the return type annotation on `AgentStudioProject.merge_branch()` to match the actual return
+  type from the handler layer.
+
+## Motivation
+
+The `project.py` method declared `list[str]` for the conflicts and errors return values, but the
+  handlers (`interface.py`, `sync_client.py`) correctly return `list[dict[str, str]]`. This mismatch
+  could mislead type checkers and developers.
+
+## Changes
+
+- Updated `merge_branch` return type from `tuple[bool, list[str], list[str]]` to `tuple[bool,
+  list[dict[str, str]], list[dict[str, str]]]` - Updated docstring to match
+
+## Test strategy
+
+- [x] N/A (docs, config, or trivial change)
+
+## Checklist
+
+- [x] `ruff check .` and `ruff format --check .` pass - [x] `pytest` passes - [x] No breaking
+  changes to the `poly` CLI interface (or migration path documented) - [x] Commit messages follow
+  [conventional commits](https://www.conventionalcommits.org/)
+
+
 ## v0.20.1 (2026-05-15)
 
 ### Bug Fixes
