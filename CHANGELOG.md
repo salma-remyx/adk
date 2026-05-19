@@ -1,6 +1,45 @@
 # CHANGELOG
 
 
+## v0.20.3 (2026-05-19)
+
+### Bug Fixes
+
+- Use dynamic key for experimental config ([#154](https://github.com/polyai/adk/pull/154),
+  [`e57a8ef`](https://github.com/polyai/adk/commit/e57a8efc00e2fb701db3c90f82d9ba209788daaf))
+
+## Summary
+
+Stop hardcoding `"default"` as the experimental config key — use the actual key from the projection
+  dict instead.
+
+## Motivation
+
+Projects with a non-default experimental config identifier fail because
+  `_read_experimental_config_from_projection` always looks up `"default"`. This dynamically reads
+  the first config entry.
+
+## Changes
+
+- Read the first key-value pair from the experimental configs dict instead of hardcoding `"default"`
+  - Use the actual config ID as both the dict key and `resource_id`
+
+## Test strategy
+
+- [ ] Added/updated unit tests - [x] Manual CLI testing (`poly <command>`) - [x] Tested against a
+  live Agent Studio project - [ ] N/A (docs, config, or trivial change)
+
+## Checklist
+
+- [x] `ruff check .` and `ruff format --check .` pass - [x] `pytest` passes - [x] No breaking
+  changes to the `poly` CLI interface (or migration path documented) - [x] Commit messages follow
+  [conventional commits](https://www.conventionalcommits.org/)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+
 ## v0.20.2 (2026-05-18)
 
 ### Bug Fixes
