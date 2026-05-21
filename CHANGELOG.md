@@ -1,6 +1,47 @@
 # CHANGELOG
 
 
+## v0.21.1 (2026-05-21)
+
+### Bug Fixes
+
+- Add tab-completion for branch switch and misc CLI fixes
+  ([#159](https://github.com/polyai/adk/pull/159),
+  [`91c68bb`](https://github.com/polyai/adk/commit/91c68bb8d10c749d958bbd358c1541381102201f))
+
+## Summary
+
+Adds tab-completion support for `poly branch switch` and fixes related CLI issues.
+
+## Motivation
+
+Branch names weren't being tab-completed on the `switch` subcommand, making it harder to quickly
+  switch branches. The `_branch_name_completer` was also a classmethod which caused issues with
+  argcomplete's expected function signature.
+
+## Changes
+
+- Changed `_branch_name_completer` from `@classmethod` to `@staticmethod` (argcomplete expects a
+  plain callable, not a bound method) - Attached `.completer` to the `branch_name` argument on
+  `branch switch` for tab-completion - Made `review` subcommand `required=True` so it shows help
+  instead of silently doing nothing
+
+## Test strategy
+
+- [ ] Added/updated unit tests - [x] Manual CLI testing (`poly <command>`) - [ ] Tested against a
+  live Agent Studio project - [ ] N/A (docs, config, or trivial change)
+
+## Checklist
+
+- [x] `ruff check .` and `ruff format --check .` pass - [x] `pytest` passes - [x] No breaking
+  changes to the `poly` CLI interface (or migration path documented) - [x] Commit messages follow
+  [conventional commits](https://www.conventionalcommits.org/)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+
 ## v0.21.0 (2026-05-21)
 
 ### Chores
