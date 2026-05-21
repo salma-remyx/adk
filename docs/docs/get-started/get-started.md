@@ -5,7 +5,7 @@ description: Go from zero to a working local agent project in minutes using the 
 
 # Getting started
 
-The fastest way to get up and running is entirely from the command line. Two steps — install the ADK, then run `poly start` — take you from an empty machine to a local project you can edit, push, and deploy.
+The fastest way to get up and running is entirely from the command line. Two steps — install the ADK, then authenticate — take you from an empty machine to a local project you can edit, push, and deploy.
 
 ---
 
@@ -47,11 +47,15 @@ poly --help
 
 ## Step 2 — Sign in and set up your API key
 
+The right command depends on whether you are a new user or an existing enterprise user.
+
+### New users — `poly start`
+
 ```bash
 poly start
 ```
 
-`poly start` handles everything you need to authenticate:
+`poly start` is designed for users creating a new Agent Studio account. It handles everything in one flow:
 
 1. **Sign up or sign in** — opens a browser window for authentication. This can be on any device, not just the machine running the CLI.
 2. **API key** — generates a key and saves it to `~/.poly/credentials.json`. Future `poly` commands pick it up automatically — no environment variables to manage.
@@ -59,6 +63,25 @@ poly start
 
 !!! tip "Already have an account?"
     If `poly start` detects an existing API key (from the credential file or an environment variable), it skips authentication and goes straight to project creation.
+
+### Existing enterprise users — `poly login`
+
+If you already have an Agent Studio account and need to authenticate against a specific region (for example, `us-1`, `uk-1`, or `euw-1`), use `poly login` instead:
+
+```bash
+poly login
+poly login --region us-1
+```
+
+`poly login` opens a browser window for authentication, then saves your API key credentials to `~/.poly/credentials.json`. If you omit `--region`, you are prompted to select one interactively.
+
+| Region flag | Use |
+|---|---|
+| `poly login` | Prompted to select region interactively |
+| `poly login --region studio` | Authenticate against Agent Studio (default region) |
+| `poly login --region us-1` | Authenticate against the US enterprise region |
+| `poly login --region uk-1` | Authenticate against the UK enterprise region |
+| `poly login --region euw-1` | Authenticate against the EU West enterprise region |
 
 ??? note "Manual API key setup"
 
@@ -80,7 +103,7 @@ poly start
 !!! info "How the ADK resolves API keys"
     The ADK checks for credentials in the following order:
 
-    1. **Credential file** — `~/.poly/credentials.json` (written by `poly start`)
+    1. **Credential file** — `~/.poly/credentials.json` (written by `poly start` or `poly login`)
     2. **Region-specific env var** — e.g. `POLY_ADK_KEY_US`
     3. **General env var** — `POLY_ADK_KEY`
 
@@ -157,7 +180,7 @@ poly pull
 If you have an existing project — built in the browser, by a PolyAI team, or by any other method — connect it to the ADK in two commands:
 
 ```bash
-poly start    # sign in and save your API key (skip if already done)
+poly login    # sign in and save your API key (use poly start for new accounts)
 poly init     # interactive prompts to pick region, account, and project
 ```
 

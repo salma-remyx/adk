@@ -26,6 +26,61 @@ poly push --help
 
     The installed CLI is the fastest way to confirm the commands and flags available in your local environment.
 
+## Authentication commands
+
+### `poly start`
+
+Create a new Agent Studio account, set up your API key, and create a first project with a single command.
+
+`poly start` is intended for **new free-tier users** who do not yet have an Agent Studio account.
+
+~~~bash
+poly start
+~~~
+
+`poly start` walks you through:
+
+1. **Sign up or sign in** — opens a browser window for authentication against the Studio region.
+2. **API key** — generates a key and saves it to `~/.poly/credentials.json`.
+3. **Create a project** — optionally creates a new Agent Studio project and pulls it down locally.
+
+!!! tip "Already have an account?"
+    If `poly start` detects an existing API key (from the credential file or an environment variable), it skips authentication and goes straight to project creation.
+
+### `poly login`
+
+Log in to an existing Agent Studio account and save API key credentials for CLI access.
+
+`poly login` is intended for **existing enterprise users** who need to authenticate against a specific region rather than the default Studio region.
+
+~~~bash
+poly login
+poly login --region us-1
+~~~
+
+`poly login` walks you through:
+
+1. **Region selection** — prompts you to select a region if `--region` is not supplied.
+2. **Authentication** — opens a browser window for you to authenticate and authorize the CLI.
+3. **API key** — fetches or creates a PAT and saves it to `~/.poly/credentials.json`.
+
+| Flag | Description |
+|---|---|
+| `--region` | Region to log in to. Choices: `studio`, `us-1`, `uk-1`, `euw-1`. If omitted, you are prompted to select one interactively. |
+
+Available regions shown in the interactive prompt:
+
+| Choice | Value |
+|---|---|
+| Studio | `studio` |
+| US (us-1) — Enterprise | `us-1` |
+| UK (uk-1) — Enterprise | `uk-1` |
+| EU West (euw-1) — Enterprise | `euw-1` |
+
+!!! info "Dev and staging regions"
+
+    The `dev` and `staging` regions are not shown in the interactive prompt but are accessible via `--region dev` and `--region staging` for internal use.
+
 ## Core commands
 
 ### `poly project`
@@ -703,17 +758,18 @@ poly push --from-projection - < proj.json
 
 A typical CLI workflow looks like this:
 
-1. create a new project with `poly project create` or initialize an existing one with `poly init`
-2. pull with `poly pull` if needed to refresh local state
-3. create or switch to a branch
-4. edit files
-5. inspect changes with `poly status` and `poly diff`
-6. validate with `poly validate`
-7. push with `poly push`
-8. optionally review with `poly review`
-9. test or chat with the agent using `poly chat`
-10. merge the branch with `poly branch merge '<message>'`
-11. promote to pre-release or live with `poly deployments promote`
+1. authenticate with `poly start` (new users) or `poly login` (existing enterprise users)
+2. create a new project with `poly project create` or initialize an existing one with `poly init`
+3. pull with `poly pull` if needed to refresh local state
+4. create or switch to a branch
+5. edit files
+6. inspect changes with `poly status` and `poly diff`
+7. validate with `poly validate`
+8. push with `poly push`
+9. optionally review with `poly review`
+10. test or chat with the agent using `poly chat`
+11. merge the branch with `poly branch merge '<message>'`
+12. promote to pre-release or live with `poly deployments promote`
 
 !!! info "Run commands from the project folder"
 
