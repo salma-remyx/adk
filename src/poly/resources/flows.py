@@ -1565,18 +1565,20 @@ class FunctionStep(Function, BaseFlowStep):
                         if known_exit_flow_condition
                         else f"CONDITION-{uuid.uuid4().hex[:8]}"
                     ),
-                    name=condition_name,
-                    condition_type=condition_type,
+                    name=(
+                        known_exit_flow_condition.name if known_exit_flow_condition else "Exit flow"
+                    ),
+                    condition_type=ConditionType.EXIT_FLOW,
                     step_id=step_id,
                     flow_id=flow_id,
-                    child_step=child_step_id,
+                    child_step="",
                     position=known_exit_flow_condition.position
                     if known_exit_flow_condition
                     else None,
                     ingress=known_exit_flow_condition.ingress
                     if known_exit_flow_condition
                     else None,
-                    exit_flow_position=known_condition.exit_flow_position
+                    exit_flow_position=known_exit_flow_condition.exit_flow_position
                     if known_exit_flow_condition
                     else None,
                     parent_is_no_code_step=False,

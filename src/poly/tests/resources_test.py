@@ -3828,6 +3828,75 @@ class FunctionStepTests(unittest.TestCase):
         self.assertEqual(condition.child_step, "FUNCTION_STEPS-def")
         self.assertEqual(condition.condition_type, ConditionType.FUNCTION_STEP)
 
+    def test_read_local_resource_exit_flow_condition(self):
+        """read_local_resource should extract an exit_flow condition from conv.exit_flow()."""
+        code = (
+            "from _gen import *  # <AUTO GENERATED>\n\n\n"
+            "def my_func(conv: Conversation, flow: Flow):\n"
+            "    if not conv.state.ok:\n"
+            "        conv.exit_flow()\n"
+            "        return\n"
+            '    flow.goto_step("Target Step", "Step reached")\n'
+        )
+        step_yaml = (
+            "step_type: default_step\n"
+            "name: Target Step\n"
+            "conditions: []\n"
+            "extracted_entities: []\n"
+            "prompt: Some prompt\n"
+        )
+
+        resource_mappings = [
+            ResourceMapping(
+                resource_id="test_flow",
+                resource_name="Test Flow",
+                resource_type=FlowConfig,
+                file_path="flows/test_flow/flow_config.yaml",
+                resource_prefix=None,
+                flow_name="Test Flow",
+            ),
+            ResourceMapping(
+                resource_id="Test Flow_FLOW_STEPS-abc",
+                resource_name="Target Step",
+                resource_type=FlowStep,
+                file_path="flows/test_flow/steps/target_step.yaml",
+                resource_prefix=None,
+                flow_name="Test Flow",
+            ),
+        ]
+
+        with mock_read_from_file({
+            "flows/test_flow/function_steps/my_func.py": code,
+            "flows/test_flow/steps/target_step.yaml": step_yaml,
+        }):
+            result = FunctionStep.read_local_resource(
+                file_path="flows/test_flow/function_steps/my_func.py",
+                resource_id="Test Flow_my_func",
+                resource_name="my_func",
+                resource_mappings=resource_mappings,
+                known_latency_control={},
+            )
+
+        self.assertEqual(len(result.conditions), 2)
+
+        step_cond = next(
+            c for c in result.conditions if c.condition_type != ConditionType.EXIT_FLOW
+        )
+        self.assertEqual(step_cond.name, "Step reached")
+        self.assertEqual(step_cond.condition_type, ConditionType.NO_CODE_STEP)
+        self.assertEqual(step_cond.child_step, "FLOW_STEPS-abc")
+        self.assertEqual(step_cond.step_id, "my_func")
+        self.assertEqual(step_cond.flow_id, "test_flow")
+
+        exit_cond = next(
+            c for c in result.conditions if c.condition_type == ConditionType.EXIT_FLOW
+        )
+        self.assertEqual(exit_cond.name, "Exit flow")
+        self.assertEqual(exit_cond.condition_type, ConditionType.EXIT_FLOW)
+        self.assertEqual(exit_cond.child_step, "")
+        self.assertEqual(exit_cond.step_id, "my_func")
+        self.assertEqual(exit_cond.flow_id, "test_flow")
+
 
 class ExperimentalConfigTests(unittest.TestCase):
     def test_validate_experimental_config(self):
