@@ -45,9 +45,23 @@ ENTITY_SECTION_HEADER = 40.0
 LABEL_CHAR_WIDTH = 7.0
 LABEL_PADDING = 20.0
 LABEL_ICON_WIDTH = 25.0
+LABEL_GAP = 10.0
 CONDITION_LABEL_OFFSET_Y = 100.0
+BACK_EDGE_X_OFFSET = 50.0
 
 _FLOW_FUNC_REF_RE = re.compile(r"\{\{ft:([^}]+)\}\}")
+
+NodeIndexes = tuple[dict[str, "BaseFlowStep"], dict[str, "BaseFlowStep"]]
+
+
+def _build_node_indexes(nodes: list["BaseFlowStep"]) -> NodeIndexes:
+    """Build name->node and id->node lookup dicts."""
+    return {n.name: n for n in nodes}, {n.step_id: n for n in nodes}
+
+
+def _has_conditions(node: "BaseFlowStep") -> bool:
+    """Check if a node has conditions."""
+    return hasattr(node, "conditions") and bool(node.conditions)
 
 
 def _node_width(node: "BaseFlowStep") -> float:
@@ -83,11 +97,11 @@ def _resolve_node(
 
 def _build_graph(
     nodes: list["BaseFlowStep"],
+    indexes: NodeIndexes,
     flow_functions: list | None = None,
 ) -> tuple[nx.DiGraph, set[str]]:
     """Build a directed graph from flow nodes."""
-    node_by_name = {n.name: n for n in nodes}
-    node_by_id = {n.step_id: n for n in nodes}
+    node_by_name, node_by_id = indexes
     func_targets = _build_flow_func_targets(flow_functions or [])
 
     G = nx.DiGraph()
@@ -97,7 +111,7 @@ def _build_graph(
         G.add_node(n.step_id)
 
     for node in nodes:
-        if hasattr(node, "conditions") and node.conditions:
+        if _has_conditions(node):
             for cond in node.conditions:
                 if cond.child_step:
                     target = _resolve_node(cond.child_step, node_by_name, node_by_id)
@@ -234,12 +248,8 @@ def assign_flow_positions(
     start_node_id: str,
     flow_functions: list | None = None,
     clean: bool = False,
-    **_kwargs: object,
 ) -> None:
     """Assign positions to flow nodes using hierarchical layout.
-
-    Uses networkx for graph structure and BFS layer assignment, with
-    barycenter heuristic for node ordering within layers.
 
     Args:
         nodes: Flow step objects to position (FlowStep and FunctionStep).
@@ -247,28 +257,28 @@ def assign_flow_positions(
         flow_functions: Optional list of flow Function objects whose code
             is used to resolve {{ft:func}} prompt references into edges.
         clean: If True, clear all positions and recompute from scratch.
-            Used for new flows. If False, only position unpositioned nodes
-            relative to their parents' existing positions.
     """
     if not nodes:
         return
 
+    indexes = _build_node_indexes(nodes)
+
     if clean:
         for node in nodes:
             node.position = {}
-            if hasattr(node, "conditions") and node.conditions:
+            if _has_conditions(node):
                 for cond in node.conditions:
                     cond.position = {}
                     cond.exit_flow_position = {}
 
     unpositioned = [n for n in nodes if not n.position]
     if not unpositioned:
-        _assign_condition_positions(nodes)
+        _assign_condition_positions(nodes, indexes)
         return
 
     if clean:
-        node_map = {n.step_id: n for n in nodes}
-        G, exit_node_ids = _build_graph(nodes, flow_functions)
+        node_map = indexes[1]
+        G, exit_node_ids = _build_graph(nodes, indexes, flow_functions)
         layers = _assign_layers(G, start_node_id)
         layer_lists = _order_within_layers(G, layers)
         positions = _compute_positions(layer_lists, exit_node_ids, node_map)
@@ -278,26 +288,31 @@ def assign_flow_positions(
                 node.position = positions[node.step_id]
 
         for node in nodes:
-            if not hasattr(node, "conditions") or not node.conditions:
+            if not _has_conditions(node):
                 continue
             for cond in node.conditions:
                 exit_id = f"{node.step_id}:exit:{cond.resource_id}"
                 if exit_id in positions:
                     cond.exit_flow_position = positions[exit_id]
     else:
-        _place_new_nodes(nodes, unpositioned, flow_functions)
+        _place_new_nodes(nodes, unpositioned, indexes, flow_functions)
 
-    _assign_condition_positions(nodes)
+    _assign_condition_positions(nodes, indexes)
 
 
 def _place_new_nodes(
     all_nodes: list["BaseFlowStep"],
     new_nodes: list["BaseFlowStep"],
+    indexes: NodeIndexes,
     flow_functions: list | None = None,
 ) -> None:
     """Place new nodes relative to their parents' existing positions."""
-    G, _ = _build_graph(all_nodes, flow_functions)
-    node_by_id = {n.step_id: n for n in all_nodes}
+    G, _ = _build_graph(all_nodes, indexes, flow_functions)
+    node_by_id = indexes[1]
+
+    fallback_x = max((n.position["x"] for n in all_nodes if n.position), default=0.0)
+    fallback_x += STEP_WIDTH + NODE_SEP
+    fallback_y = min((n.position["y"] for n in all_nodes if n.position), default=0.0)
 
     for node in new_nodes:
         positioned_parents = [
@@ -330,11 +345,8 @@ def _place_new_nodes(
                 "y": round(max_y + parent_h + RANK_SEP, 1),
             }
         else:
-            all_x = [n.position["x"] for n in all_nodes if n.position]
-            x = max(all_x) + STEP_WIDTH + NODE_SEP if all_x else 0.0
-            all_y = [n.position["y"] for n in all_nodes if n.position]
-            y = min(all_y) if all_y else 0.0
-            node.position = {"x": round(x, 1), "y": round(y, 1)}
+            node.position = {"x": round(fallback_x, 1), "y": round(fallback_y, 1)}
+            fallback_x += STEP_WIDTH + NODE_SEP
 
 
 def _estimate_label_width(text: str, has_icon: bool = False) -> float:
@@ -342,15 +354,19 @@ def _estimate_label_width(text: str, has_icon: bool = False) -> float:
     return len(text) * LABEL_CHAR_WIDTH + LABEL_PADDING + (LABEL_ICON_WIDTH if has_icon else 0)
 
 
-def _assign_condition_positions(nodes: list["BaseFlowStep"]) -> None:
-    """Assign label positions for conditions."""
-    node_by_name = {n.name: n for n in nodes}
-    node_by_id = {n.step_id: n for n in nodes}
+def _assign_condition_positions(
+    nodes: list["BaseFlowStep"],
+    indexes: NodeIndexes,
+) -> None:
+    """Assign label positions for conditions, fanning out horizontally above each child."""
+    node_by_name, node_by_id = indexes
+
+    child_groups: dict[str, list[tuple["BaseFlowStep", "BaseFlowStep", "Condition"]]] = {}
+    back_edges: list[tuple["BaseFlowStep", "Condition"]] = []
+    exit_conditions: list[tuple["BaseFlowStep", "Condition"]] = []
 
     for node in nodes:
-        if not hasattr(node, "conditions") or not node.conditions:
-            continue
-        if not node.position:
+        if not _has_conditions(node) or not node.position:
             continue
 
         for condition in node.conditions:
@@ -361,31 +377,43 @@ def _assign_condition_positions(nodes: list["BaseFlowStep"]) -> None:
                 child = _resolve_node(condition.child_step, node_by_name, node_by_id)
                 if not child or not child.position:
                     continue
-
-                has_icon = node.step_type != StepType.FUNCTION_STEP
-                label_offset = _estimate_label_width(condition.name, has_icon) / 2
-                is_back_edge = child.position["y"] <= node.position["y"]
-
-                if is_back_edge:
-                    condition.ingress = "bottom"
-                    condition.position = {
-                        "x": node.position["x"] + _node_width(node) + 50,
-                        "y": node.position["y"],
-                    }
+                if child.position["y"] <= node.position["y"]:
+                    back_edges.append((node, condition))
                 else:
-                    child_w = _node_width(child)
-                    condition.position = {
-                        "x": child.position["x"] + child_w / 2 - label_offset,
-                        "y": child.position["y"] - CONDITION_LABEL_OFFSET_Y,
-                    }
-
+                    child_groups.setdefault(child.step_id, []).append((node, child, condition))
             elif condition.exit_flow_position:
-                label_offset = _estimate_label_width(condition.name) / 2
-                condition.position = {
-                    "x": (node.position["x"] + condition.exit_flow_position["x"]) / 2
-                    - label_offset,
-                    "y": (node.position["y"] + condition.exit_flow_position["y"]) / 2,
-                }
+                exit_conditions.append((node, condition))
+
+    for group in child_groups.values():
+        child = group[0][1]
+        child_center_x = child.position["x"] + _node_width(child) / 2
+        label_y = child.position["y"] - CONDITION_LABEL_OFFSET_Y
+
+        widths = []
+        for parent, _, cond in group:
+            has_icon = parent.step_type != StepType.FUNCTION_STEP
+            widths.append(_estimate_label_width(cond.name, has_icon))
+
+        total_width = sum(widths) + LABEL_GAP * (len(widths) - 1)
+        x = child_center_x - total_width / 2
+
+        for i, (_, _, cond) in enumerate(group):
+            cond.position = {"x": round(x, 1), "y": round(label_y, 1)}
+            x += widths[i] + LABEL_GAP
+
+    for node, condition in back_edges:
+        condition.ingress = "bottom"
+        condition.position = {
+            "x": node.position["x"] + _node_width(node) + BACK_EDGE_X_OFFSET,
+            "y": node.position["y"],
+        }
+
+    for node, condition in exit_conditions:
+        label_offset = _estimate_label_width(condition.name) / 2
+        condition.position = {
+            "x": (node.position["x"] + condition.exit_flow_position["x"]) / 2 - label_offset,
+            "y": (node.position["y"] + condition.exit_flow_position["y"]) / 2,
+        }
 
 
 def _pos(xy: dict[str, float]) -> StepPosition:
@@ -454,7 +482,7 @@ def build_move_commands(flow_id: str, nodes: list["BaseFlowStep"]) -> MoveFlowCo
         if node.position:
             details.append(_step_position_detail(node))
 
-        if not hasattr(node, "conditions") or not node.conditions:
+        if not _has_conditions(node):
             continue
         for cond in node.conditions:
             detail = _condition_position_detail(node, cond)
