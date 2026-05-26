@@ -196,12 +196,35 @@ def _estimate_step_height(node: "BaseFlowStep") -> float:
     return height
 
 
+def _get_node_width(
+    nid: str, exit_node_ids: set[str], node_map: dict[str, "BaseFlowStep"]
+) -> float:
+    """Return the rendered width of a node."""
+    if nid in exit_node_ids:
+        return EXIT_NODE_WIDTH
+    node = node_map.get(nid)
+    if node and node.step_type == StepType.FUNCTION_STEP:
+        return FUNC_STEP_WIDTH
+    return STEP_WIDTH
+
+
+def _get_node_height(
+    nid: str, exit_node_ids: set[str], node_map: dict[str, "BaseFlowStep"]
+) -> float:
+    """Return the rendered height of a node."""
+    if nid in exit_node_ids:
+        return EXIT_NODE_HEIGHT
+    node = node_map.get(nid)
+    return _estimate_step_height(node) if node else STEP_HEIGHT
+
+
 def _compute_positions(
+    G: nx.DiGraph,
     layer_lists: dict[int, list[str]],
     exit_node_ids: set[str],
-    node_map: dict[str, "BaseFlowStep"] | None = None,
+    node_map: dict[str, "BaseFlowStep"],
 ) -> dict[str, dict[str, float]]:
-    """Assign x,y coordinates based on layer and position within layer."""
+    """Assign x,y positions, centering children under their parents."""
     positions: dict[str, dict[str, float]] = {}
     y = 0.0
 
@@ -210,35 +233,41 @@ def _compute_positions(
         if not node_ids:
             continue
 
-        max_h = 0.0
-        widths = []
-        for nid in node_ids:
-            if nid in exit_node_ids:
-                widths.append(EXIT_NODE_WIDTH)
-                max_h = max(max_h, EXIT_NODE_HEIGHT)
-            else:
-                widths.append(STEP_WIDTH)
-                node = node_map.get(nid) if node_map else None
-                h = _estimate_step_height(node) if node else STEP_HEIGHT
-                max_h = max(max_h, h)
+        max_h = max(_get_node_height(nid, exit_node_ids, node_map) for nid in node_ids)
+        widths = {nid: _get_node_width(nid, exit_node_ids, node_map) for nid in node_ids}
 
-        total_width = sum(widths) + NODE_SEP * (len(node_ids) - 1)
-        x = -total_width / 2.0
+        if layer == 0:
+            total_width = sum(widths.values()) + NODE_SEP * (len(node_ids) - 1)
+            x = -total_width / 2.0
+            for nid in node_ids:
+                positions[nid] = {"x": round(x, 1), "y": round(y, 1)}
+                x += widths[nid] + NODE_SEP
+        else:
+            for nid in node_ids:
+                parent_xs = []
+                for pred in G.predecessors(nid):
+                    if pred in positions:
+                        pw = _get_node_width(pred, exit_node_ids, node_map)
+                        parent_xs.append(positions[pred]["x"] + pw / 2)
+                if parent_xs:
+                    center_x = sum(parent_xs) / len(parent_xs)
+                else:
+                    center_x = 0.0
+                positions[nid] = {
+                    "x": round(center_x - widths[nid] / 2, 1),
+                    "y": round(y, 1),
+                }
 
-        for i, nid in enumerate(node_ids):
-            positions[nid] = {"x": round(x, 1), "y": round(y, 1)}
-            x += widths[i] + NODE_SEP
+            # Resolve overlaps within the layer
+            sorted_ids = sorted(node_ids, key=lambda nid: positions[nid]["x"])
+            for i in range(1, len(sorted_ids)):
+                prev = sorted_ids[i - 1]
+                curr = sorted_ids[i]
+                min_x = positions[prev]["x"] + widths[prev] + NODE_SEP
+                if positions[curr]["x"] < min_x:
+                    positions[curr]["x"] = round(min_x, 1)
 
         y += max_h + RANK_SEP
-
-    if node_map:
-        func_offset = (STEP_WIDTH - FUNC_STEP_WIDTH) / 2
-        exit_offset = (STEP_WIDTH - EXIT_NODE_WIDTH) / 2
-        for nid, pos in positions.items():
-            if nid in exit_node_ids:
-                pos["x"] = round(pos["x"] + exit_offset, 1)
-            elif node_map.get(nid) and node_map[nid].step_type == StepType.FUNCTION_STEP:
-                pos["x"] = round(pos["x"] + func_offset, 1)
 
     return positions
 
@@ -281,7 +310,7 @@ def assign_flow_positions(
         G, exit_node_ids = _build_graph(nodes, indexes, flow_functions)
         layers = _assign_layers(G, start_node_id)
         layer_lists = _order_within_layers(G, layers)
-        positions = _compute_positions(layer_lists, exit_node_ids, node_map)
+        positions = _compute_positions(G, layer_lists, exit_node_ids, node_map)
 
         for node in nodes:
             if node.step_id in positions:
@@ -361,9 +390,10 @@ def _assign_condition_positions(
     """Assign label positions for conditions, fanning out horizontally above each child."""
     node_by_name, node_by_id = indexes
 
-    child_groups: dict[str, list[tuple["BaseFlowStep", "BaseFlowStep", "Condition"]]] = {}
+    target_groups: dict[str, list[tuple["BaseFlowStep", "Condition"]]] = {}
+    target_positions: dict[str, dict[str, float]] = {}
+    target_widths: dict[str, float] = {}
     back_edges: list[tuple["BaseFlowStep", "Condition"]] = []
-    exit_conditions: list[tuple["BaseFlowStep", "Condition"]] = []
 
     for node in nodes:
         if not _has_conditions(node) or not node.position:
@@ -380,24 +410,31 @@ def _assign_condition_positions(
                 if child.position["y"] <= node.position["y"]:
                     back_edges.append((node, condition))
                 else:
-                    child_groups.setdefault(child.step_id, []).append((node, child, condition))
+                    key = child.step_id
+                    target_groups.setdefault(key, []).append((node, condition))
+                    target_positions[key] = child.position
+                    target_widths[key] = _node_width(child)
             elif condition.exit_flow_position:
-                exit_conditions.append((node, condition))
+                key = f"{node.step_id}:exit:{condition.resource_id}"
+                target_groups.setdefault(key, []).append((node, condition))
+                target_positions[key] = condition.exit_flow_position
+                target_widths[key] = EXIT_NODE_WIDTH
 
-    for group in child_groups.values():
-        child = group[0][1]
-        child_center_x = child.position["x"] + _node_width(child) / 2
-        label_y = child.position["y"] - CONDITION_LABEL_OFFSET_Y
+    for key, group in target_groups.items():
+        target_pos = target_positions[key]
+        target_w = target_widths[key]
+        center_x = target_pos["x"] + target_w / 2
+        label_y = target_pos["y"] - CONDITION_LABEL_OFFSET_Y
 
         widths = []
-        for parent, _, cond in group:
+        for parent, cond in group:
             has_icon = parent.step_type != StepType.FUNCTION_STEP
             widths.append(_estimate_label_width(cond.name, has_icon))
 
         total_width = sum(widths) + LABEL_GAP * (len(widths) - 1)
-        x = child_center_x - total_width / 2
+        x = center_x - total_width / 2
 
-        for i, (_, _, cond) in enumerate(group):
+        for i, (_, cond) in enumerate(group):
             cond.position = {"x": round(x, 1), "y": round(label_y, 1)}
             x += widths[i] + LABEL_GAP
 
@@ -406,13 +443,6 @@ def _assign_condition_positions(
         condition.position = {
             "x": node.position["x"] + _node_width(node) + BACK_EDGE_X_OFFSET,
             "y": node.position["y"],
-        }
-
-    for node, condition in exit_conditions:
-        label_offset = _estimate_label_width(condition.name) / 2
-        condition.position = {
-            "x": (node.position["x"] + condition.exit_flow_position["x"]) / 2 - label_offset,
-            "y": (node.position["y"] + condition.exit_flow_position["y"]) / 2,
         }
 
 
@@ -437,41 +467,61 @@ def _step_position_detail(node: "BaseFlowStep") -> FlowPositionDetail:
     )
 
 
-def _condition_position_detail(
+def _condition_position_details(
     node: "BaseFlowStep",
     condition: "Condition",
-) -> FlowPositionDetail | None:
-    """Build a FlowPositionDetail for a condition label."""
+) -> list[FlowPositionDetail]:
+    """Build FlowPositionDetail protos for a condition.
+
+    Returns one detail for the label, plus a second for the exit node if applicable.
+    """
     if not condition.position:
-        return None
+        return []
     pos = _pos(condition.position)
     is_no_code = condition.parent_is_no_code_step
-
-    if condition.condition_type == ConditionType.EXIT_FLOW:
-        exit_pos = _pos(condition.exit_flow_position) if condition.exit_flow_position else pos
-        if is_no_code:
-            return FlowPositionDetail(
-                no_code_step_condition_exit_flow=NoCodeStepExitFlowPositionDetail(
-                    step_id=node.step_id, condition_id=condition.resource_id, new_position=exit_pos
-                )
-            )
-        return FlowPositionDetail(
-            function_step_condition_exit_flow=FunctionStepExitFlowPositionDetail(
-                step_id=node.step_id, condition_id=condition.resource_id, new_position=exit_pos
-            )
-        )
+    details: list[FlowPositionDetail] = []
 
     if is_no_code:
-        return FlowPositionDetail(
-            no_code_step_condition=NoCodeStepConditionPositionDetail(
-                step_id=node.step_id, condition_id=condition.resource_id, new_position=pos
+        details.append(
+            FlowPositionDetail(
+                no_code_step_condition=NoCodeStepConditionPositionDetail(
+                    step_id=node.step_id, condition_id=condition.resource_id, new_position=pos
+                )
             )
         )
-    return FlowPositionDetail(
-        function_step_condition=FunctionStepConditionPositionDetail(
-            step_id=node.step_id, condition_id=condition.resource_id, new_position=pos
+    else:
+        details.append(
+            FlowPositionDetail(
+                function_step_condition=FunctionStepConditionPositionDetail(
+                    step_id=node.step_id, condition_id=condition.resource_id, new_position=pos
+                )
+            )
         )
-    )
+
+    if condition.condition_type == ConditionType.EXIT_FLOW and condition.exit_flow_position:
+        exit_pos = _pos(condition.exit_flow_position)
+        if is_no_code:
+            details.append(
+                FlowPositionDetail(
+                    no_code_step_condition_exit_flow=NoCodeStepExitFlowPositionDetail(
+                        step_id=node.step_id,
+                        condition_id=condition.resource_id,
+                        new_position=exit_pos,
+                    )
+                )
+            )
+        else:
+            details.append(
+                FlowPositionDetail(
+                    function_step_condition_exit_flow=FunctionStepExitFlowPositionDetail(
+                        step_id=node.step_id,
+                        condition_id=condition.resource_id,
+                        new_position=exit_pos,
+                    )
+                )
+            )
+
+    return details
 
 
 def build_move_commands(flow_id: str, nodes: list["BaseFlowStep"]) -> MoveFlowComponents:
@@ -485,9 +535,7 @@ def build_move_commands(flow_id: str, nodes: list["BaseFlowStep"]) -> MoveFlowCo
         if not _has_conditions(node):
             continue
         for cond in node.conditions:
-            detail = _condition_position_detail(node, cond)
-            if detail:
-                details.append(detail)
+            details.extend(_condition_position_details(node, cond))
 
     return MoveFlowComponents(flow_id=flow_id, position_details=details)
 
