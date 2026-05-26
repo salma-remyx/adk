@@ -30,15 +30,6 @@ _GOTO_STEP_RE = re.compile(
 _FLOW_FUNC_REF_RE = re.compile(r"\{\{ft:([^}]+)\}\}")
 
 
-def _extract_goto_targets(node: "BaseFlowStep") -> list[str]:
-    """Extract step names from flow.goto_step() calls in a FunctionStep's code."""
-    code = getattr(node, "code", None)
-    if not code:
-        return []
-    clean = remove_comments_from_code(code)
-    return [m.group(1) or m.group(2) for m in _GOTO_STEP_RE.finditer(clean)]
-
-
 def _build_flow_func_targets(flow_functions: list) -> dict[str, list[str]]:
     """Map flow function name/ID -> list of step names from goto_step calls."""
     targets: dict[str, list[str]] = {}
@@ -84,11 +75,6 @@ def _build_adjacency(
                     adj.setdefault(node.step_id, []).append(exit_id)
                     adj[exit_id] = []
                     exit_node_ids.add(exit_id)
-
-        for target_name in _extract_goto_targets(node):
-            target = node_by_name.get(target_name) or node_by_id.get(target_name)
-            if target and target.step_id not in adj.get(node.step_id, []):
-                adj[node.step_id].append(target.step_id)
 
         prompt = getattr(node, "prompt", None)
         if prompt and func_targets:
@@ -332,9 +318,22 @@ def _place_new_nodes(
 
 
 def _assign_condition_positions(nodes: list["BaseFlowStep"]) -> None:
-    """Assign label positions for conditions (midpoint between parent and target)."""
+    """Assign label positions for conditions, avoiding overlap with nodes."""
     node_by_name: dict[str, "BaseFlowStep"] = {n.name: n for n in nodes}
     node_by_id: dict[str, "BaseFlowStep"] = {n.step_id: n for n in nodes}
+
+    node_boxes = []
+    for n in nodes:
+        if n.position:
+            h = _estimate_step_height(n) if hasattr(n, "prompt") else STEP_HEIGHT
+            node_boxes.append((n.position["x"], n.position["y"], STEP_WIDTH, h))
+
+    def _overlaps_node(x: float, y: float) -> bool:
+        pad = 20.0
+        for bx, by, bw, bh in node_boxes:
+            if bx - pad <= x <= bx + bw + pad and by - pad <= y <= by + bh + pad:
+                return True
+        return False
 
     for node in nodes:
         if not hasattr(node, "conditions") or not node.conditions:
@@ -351,10 +350,18 @@ def _assign_condition_positions(nodes: list["BaseFlowStep"]) -> None:
                     condition.child_step
                 )
                 if child and child.position:
-                    condition.position = {
-                        "x": (node.position["x"] + child.position["x"]) / 2,
-                        "y": (node.position["y"] + child.position["y"]) / 2,
-                    }
+                    is_back_edge = child.position["y"] <= node.position["y"]
+                    if is_back_edge:
+                        condition.position = {
+                            "x": node.position["x"] + STEP_WIDTH + 50,
+                            "y": node.position["y"],
+                        }
+                    else:
+                        mid_x = (node.position["x"] + child.position["x"]) / 2
+                        mid_y = (node.position["y"] + child.position["y"]) / 2
+                        if _overlaps_node(mid_x, mid_y):
+                            mid_x = node.position["x"] + STEP_WIDTH + 50
+                        condition.position = {"x": mid_x, "y": mid_y}
             elif condition.exit_flow_position:
                 condition.position = {
                     "x": (node.position["x"] + condition.exit_flow_position["x"]) / 2,

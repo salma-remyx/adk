@@ -110,9 +110,7 @@ TEST_FUNCTION = Function(
     description="A test function",
     code=TEST_CODE,
     parameters=[
-        FunctionParameters(
-            name="test_param", description="test parameter", type="integer"
-        )
+        FunctionParameters(name="test_param", description="test parameter", type="integer")
     ],
     latency_control=FunctionLatencyControl(),
     flow_id=None,
@@ -138,9 +136,7 @@ class FunctionTests(unittest.TestCase):
             description="A test function",
             code='"""This is a docstring."""\n\n' + TEST_CODE,
             parameters=[
-                FunctionParameters(
-                    name="test_param", description="test parameter", type="integer"
-                )
+                FunctionParameters(name="test_param", description="test parameter", type="integer")
             ],
             latency_control=FunctionLatencyControl(),
             flow_id=None,
@@ -177,9 +173,7 @@ def test_code(conv: Conversation, flow: Flow, test_param: int):
             )
         ]
 
-        pretty_code = Function.make_pretty(
-            function_code, resource_mappings=resource_mappings
-        )
+        pretty_code = Function.make_pretty(function_code, resource_mappings=resource_mappings)
         self.assertEqual(pretty_code, expected_pretty_code)
 
     def test_convert_and_unconvert_code(self):
@@ -505,9 +499,7 @@ def end_function(conv: Conversation, test_param: int):
             description="A test function",
             code=TEST_CODE,
             parameters=[
-                FunctionParameters(
-                    name="test_param", description="test parameter", type="integer"
-                )
+                FunctionParameters(name="test_param", description="test parameter", type="integer")
             ],
             latency_control=FunctionLatencyControl(enabled=False),
             function_type=FunctionType.GLOBAL,
@@ -521,9 +513,7 @@ def end_function(conv: Conversation, test_param: int):
 def my_func(conv: Conversation):
     pass
 """
-        code, params, desc, lc = Function._extract_decorators(
-            code_with_decorator, "my_func", []
-        )
+        code, params, desc, lc = Function._extract_decorators(code_with_decorator, "my_func", [])
         self.assertTrue(lc.enabled)
         self.assertEqual(lc.initial_delay, 5000)
         self.assertEqual(lc.interval, 3000)
@@ -547,9 +537,7 @@ def my_func(conv: Conversation):
                 FunctionDelayResponse(id="DELAY-existing", message="Hold on...", duration=5000),
             ],
         )
-        _, _, _, lc = Function._extract_decorators(
-            code_with_decorator, "my_func", [], known_lc
-        )
+        _, _, _, lc = Function._extract_decorators(code_with_decorator, "my_func", [], known_lc)
         self.assertEqual(lc.delay_responses[0].id, "DELAY-existing")
 
     def test_latency_control_roundtrip(self):
@@ -569,9 +557,7 @@ def my_func(conv: Conversation):
             description="A test function",
             code=TEST_CODE,
             parameters=[
-                FunctionParameters(
-                    name="test_param", description="test parameter", type="integer"
-                )
+                FunctionParameters(name="test_param", description="test parameter", type="integer")
             ],
             latency_control=lc,
             function_type=FunctionType.GLOBAL,
@@ -617,8 +603,10 @@ def test_code(conv: Conversation, test_param: int):
                 resource_mappings=[],
                 known_parameters=[
                     FunctionParameters(
-                        id="param-123", name="test_param",
-                        description="test parameter", type="integer",
+                        id="param-123",
+                        name="test_param",
+                        description="test parameter",
+                        type="integer",
                     )
                 ],
                 known_latency_control=known_lc,
@@ -649,7 +637,9 @@ def test_code(conv: Conversation, test_param: int):
             code="def my_func(conv: Conversation):\n    pass\n",
             parameters=[],
             latency_control=FunctionLatencyControl(
-                enabled=True, initial_delay=5000, interval=3000,
+                enabled=True,
+                initial_delay=5000,
+                interval=3000,
             ),
             function_type=FunctionType.GLOBAL,
         )
@@ -675,7 +665,9 @@ def test_code(conv: Conversation, test_param: int):
             code="def my_func(conv: Conversation):\n    pass\n",
             parameters=[],
             latency_control=FunctionLatencyControl(
-                enabled=True, initial_delay=9000, interval=3000,
+                enabled=True,
+                initial_delay=9000,
+                interval=3000,
             ),
             function_type=FunctionType.GLOBAL,
         )
@@ -746,7 +738,9 @@ def test_code(conv: Conversation, test_param: int):
         self.assertIsNone(func.validate(resource_mappings=resource_mappings))
 
         # Valid goto_step to a FunctionStep
-        func.code = 'def my_func(conv: Conversation, flow: Flow):\n    flow.goto_step("process_payment")\n'
+        func.code = (
+            'def my_func(conv: Conversation, flow: Flow):\n    flow.goto_step("process_payment")\n'
+        )
         self.assertIsNone(func.validate(resource_mappings=resource_mappings))
 
         # Valid goto_step with label argument
@@ -754,18 +748,22 @@ def test_code(conv: Conversation, test_param: int):
         self.assertIsNone(func.validate(resource_mappings=resource_mappings))
 
         # Valid goto_step with apostrophes in step name (double-quoted string)
-        func.code = 'def my_func(conv: Conversation, flow: Flow):\n    flow.goto_step("Don\'t know/ Can\'t Find")\n'
+        func.code = "def my_func(conv: Conversation, flow: Flow):\n    flow.goto_step(\"Don't know/ Can't Find\")\n"
         self.assertIsNone(func.validate(resource_mappings=resource_mappings))
 
         # Invalid goto_step
-        func.code = 'def my_func(conv: Conversation, flow: Flow):\n    flow.goto_step("Nonexistent Step")\n'
+        func.code = (
+            'def my_func(conv: Conversation, flow: Flow):\n    flow.goto_step("Nonexistent Step")\n'
+        )
         with self.assertRaises(ValueError) as cm:
             func.validate(resource_mappings=resource_mappings)
         self.assertIn("flow.goto_step('Nonexistent Step')", str(cm.exception))
         self.assertIn("does not exist", str(cm.exception))
 
         # No error when no resource_mappings provided
-        func.code = 'def my_func(conv: Conversation, flow: Flow):\n    flow.goto_step("Nonexistent Step")\n'
+        func.code = (
+            'def my_func(conv: Conversation, flow: Flow):\n    flow.goto_step("Nonexistent Step")\n'
+        )
         self.assertIsNone(func.validate(resource_mappings=[]))
 
         # No error for global functions (no flow_name)
@@ -773,7 +771,7 @@ def test_code(conv: Conversation, test_param: int):
             resource_id="func-2",
             name="global_func",
             description="desc",
-            code='def global_func(conv: Conversation):\n    pass\n',
+            code="def global_func(conv: Conversation):\n    pass\n",
             parameters=[],
             latency_control=FunctionLatencyControl(),
             function_type=FunctionType.GLOBAL,
@@ -825,7 +823,7 @@ def test_code(conv: Conversation, test_param: int):
         self.assertIn("does not exist", str(cm.exception))
 
         # Variable arguments should not be checked
-        func.code = 'def my_func(conv: Conversation):\n    conv.goto_flow(flow_name)\n'
+        func.code = "def my_func(conv: Conversation):\n    conv.goto_flow(flow_name)\n"
         self.assertIsNone(func.validate(resource_mappings=resource_mappings))
 
         # No error when no resource_mappings provided
@@ -944,9 +942,7 @@ class TopicTests(unittest.TestCase):
             )
         ]
         converted_topic = TEST_TOPIC.to_pretty(resource_mappings=resource_mappings)
-        reverted_topic = Topic.from_pretty(
-            converted_topic, resource_mappings=resource_mappings
-        )
+        reverted_topic = Topic.from_pretty(converted_topic, resource_mappings=resource_mappings)
         # Should roundtrip back to original raw format
         self.assertEqual(reverted_topic, TEST_TOPIC.raw)
 
@@ -1275,7 +1271,8 @@ class TopicTests(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             topic_with_flow_function.validate(resource_mappings=[])
         self.assertIn(
-            "Invalid reference type: transition_functions is not a valid reference type for this resource. Valid references are: ['global_functions', 'sms', 'handoff', 'attributes', 'variables']", str(cm.exception)
+            "Invalid reference type: transition_functions is not a valid reference type for this resource. Valid references are: ['global_functions', 'sms', 'handoff', 'attributes', 'variables']",
+            str(cm.exception),
         )
 
     def test_validate_topic_example_queries(self):
@@ -1290,9 +1287,7 @@ class TopicTests(unittest.TestCase):
 
         with self.assertRaises(ValueError) as cm:
             topic_with_too_many_example_queries.validate(resource_mappings=[])
-        self.assertIn(
-            "Example queries must be less than 20", str(cm.exception)
-        )
+        self.assertIn("Example queries must be less than 20", str(cm.exception))
 
     def test_read_local_resource(self):
         """Test reading a topic from a YAML file."""
@@ -1406,9 +1401,7 @@ class VoiceDisclaimerMessageTests(unittest.TestCase):
     def test_convert_and_unconvert_disclaimer(self):
         """Test roundtrip conversion: to_pretty -> from_pretty."""
         converted_disclaimer = TEST_DISCLAIMER.to_pretty()
-        reverted_disclaimer = VoiceDisclaimerMessage.from_pretty(
-            converted_disclaimer
-        )
+        reverted_disclaimer = VoiceDisclaimerMessage.from_pretty(converted_disclaimer)
         self.assertEqual(reverted_disclaimer, TEST_DISCLAIMER.raw)
 
     def test_validate_disclaimer_message(self):
@@ -1511,12 +1504,16 @@ class VoiceDisclaimerMessageTests(unittest.TestCase):
 
         config_path = os.path.join("voice", "configuration.yaml")
         with mock_read_from_file({config_path: test_file_content}):
-            with unittest.mock.patch(
-                "poly.resources.resource.os.path.exists", side_effect=exists_config
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.isfile", side_effect=isfile_config
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.getmtime", side_effect=getmtime_config
+            with (
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.exists", side_effect=exists_config
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.isfile", side_effect=isfile_config
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.getmtime", side_effect=getmtime_config
+                ),
             ):
                 result = VoiceDisclaimerMessage.read_local_resource(
                     file_path=os.path.join("voice", "configuration.yaml", "disclaimer_messages"),
@@ -1634,12 +1631,16 @@ class VoiceGreetingTests(unittest.TestCase):
 
         config_path = os.path.join("voice", "configuration.yaml")
         with mock_read_from_file({config_path: test_file_content}):
-            with unittest.mock.patch(
-                "poly.resources.resource.os.path.exists", side_effect=exists_config
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.isfile", side_effect=isfile_config
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.getmtime", side_effect=getmtime_config
+            with (
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.exists", side_effect=exists_config
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.isfile", side_effect=isfile_config
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.getmtime", side_effect=getmtime_config
+                ),
             ):
                 result = VoiceGreeting.read_local_resource(
                     file_path=os.path.join("voice", "configuration.yaml", "greeting"),
@@ -1801,9 +1802,7 @@ class SettingsRoleTests(unittest.TestCase):
         )
         with self.assertRaises(ValueError) as cm:
             invalid_role.validate(resource_mappings=[])
-        self.assertIn(
-            "Custom role can only be set if role is 'other'.", str(cm.exception)
-        )
+        self.assertIn("Custom role can only be set if role is 'other'.", str(cm.exception))
 
         # Test with custom and 'other' role (valid case)
         valid_role = SettingsRole(
@@ -2146,9 +2145,7 @@ class FlowConfigTests(unittest.TestCase):
                 flow_name="Test Flow",
             )
         ]
-        self.assertIsNone(
-            TEST_FLOW_CONFIG.validate(resource_mappings=resource_mappings)
-        )
+        self.assertIsNone(TEST_FLOW_CONFIG.validate(resource_mappings=resource_mappings))
 
         # Test with empty start_step
         invalid_config = FlowConfig(
@@ -2192,7 +2189,9 @@ class FlowConfigTests(unittest.TestCase):
         )
         with self.assertRaises(ValueError) as cm:
             invalid_config.validate(resource_mappings=resource_mappings)
-        self.assertIn("Description cannot contain leading or trailing whitespace.", str(cm.exception))
+        self.assertIn(
+            "Description cannot contain leading or trailing whitespace.", str(cm.exception)
+        )
 
     def test_read_local_resource(self):
         """Test reading a flow config from a YAML file."""
@@ -2248,9 +2247,7 @@ start_step: step-1
                     resource_id="flow-123",
                     resource_name="Different Flow Name",
                 )
-            self.assertIn(
-                "Flow folder name does not match flow name in config", str(cm.exception)
-            )
+            self.assertIn("Flow folder name does not match flow name in config", str(cm.exception))
 
     def test_start_step_with_colon_in_name(self):
         """Test that flow names with colons are properly quoted in YAML."""
@@ -2383,6 +2380,7 @@ extracted_entities:
 prompt: Hello, how can I help you?
 """
 
+
 class FlowStepTests(unittest.TestCase):
     def test_get_raw(self):
         """Test that raw property returns correct YAML representation."""
@@ -2475,14 +2473,16 @@ class FlowStepTests(unittest.TestCase):
             file_name="test_step",
             flow_id="flow-123",
             flow_name="Test Flow",
-            resource_mappings=[]
+            resource_mappings=[],
         )
         self.assertEqual(step.asr_biasing, ASRBiasing(flow_id="flow-123", step_id="step-1"))
         self.assertEqual(step.dtmf_config, DTMFConfig(flow_id="flow-123", step_id="step-1"))
 
     def test_prompt_whitespace_is_stripped(self):
         """Prompts with leading/trailing whitespace are stripped on read."""
-        yaml_dict = yaml.safe_load("step_type: advanced_step\nname: Test Step\nprompt: '  Hello  '\n")
+        yaml_dict = yaml.safe_load(
+            "step_type: advanced_step\nname: Test Step\nprompt: '  Hello  '\n"
+        )
         step = FlowStep.from_yaml_dict(
             yaml_dict,
             resource_id="Test Flow_step-1",
@@ -2768,9 +2768,7 @@ conditions:
             position={"x": 0.0, "y": 0.0},
         )
         self.assertIsNone(
-            valid_condition.validate(
-                resource_mappings=resource_mappings_with_correct_format
-            )
+            valid_condition.validate(resource_mappings=resource_mappings_with_correct_format)
         )
 
         # Test with empty name
@@ -2786,9 +2784,7 @@ conditions:
             position={"x": 0.0, "y": 0.0},
         )
         with self.assertRaises(ValueError) as cm:
-            invalid_condition.validate(
-                resource_mappings=resource_mappings_with_correct_format
-            )
+            invalid_condition.validate(resource_mappings=resource_mappings_with_correct_format)
         self.assertIn("Condition name cannot be empty.", str(cm.exception))
 
         # Test with missing child step
@@ -2804,9 +2800,7 @@ conditions:
             position={"x": 0.0, "y": 0.0},
         )
         with self.assertRaises(ValueError) as cm:
-            invalid_condition.validate(
-                resource_mappings=resource_mappings_with_correct_format
-            )
+            invalid_condition.validate(resource_mappings=resource_mappings_with_correct_format)
         self.assertIn("Step 'missing-step' not found", str(cm.exception))
 
         # Test exit flow condition (no child step required)
@@ -2822,9 +2816,7 @@ conditions:
             position={"x": 0.0, "y": 0.0},
         )
         self.assertIsNone(
-            exit_condition.validate(
-                resource_mappings=resource_mappings_with_correct_format
-            )
+            exit_condition.validate(resource_mappings=resource_mappings_with_correct_format)
         )
 
         # Test with missing required entities
@@ -2954,9 +2946,7 @@ conditions:
         self.assertEqual(len(updated), 1)  # ASR changed
         self.assertEqual(updated[0].resource_id, "flow-123.step-1")
         self.assertEqual(updated[0].command_type, "flow_step_asr_config")
-        self.assertEqual(
-            len(deleted), 0
-        )  # Advanced steps don't have "deleted" ASR/DTMF
+        self.assertEqual(len(deleted), 0)  # Advanced steps don't have "deleted" ASR/DTMF
 
         # Test Advanced step: DTMF config changed (update)
         new_dtmf = DTMFConfig(
@@ -3070,10 +3060,8 @@ conditions:
             position={"x": 0.0, "y": 0.0},
         )
 
-        new, updated, deleted = (
-            step_with_condition.get_new_updated_deleted_subresources(
-                old_resource=default_step_empty
-            )
+        new, updated, deleted = step_with_condition.get_new_updated_deleted_subresources(
+            old_resource=default_step_empty
         )
         self.assertEqual(len(new), 1)  # New condition
         self.assertEqual(new[0].resource_id, "cond-1")
@@ -3108,10 +3096,8 @@ conditions:
             position={"x": 0.0, "y": 0.0},
         )
 
-        new, updated, deleted = (
-            step_with_updated_condition.get_new_updated_deleted_subresources(
-                old_resource=step_with_condition
-            )
+        new, updated, deleted = step_with_updated_condition.get_new_updated_deleted_subresources(
+            old_resource=step_with_condition
         )
         self.assertEqual(len(new), 0)
         self.assertEqual(len(updated), 1)  # Condition updated
@@ -3216,9 +3202,7 @@ conditions:
             position={"x": 0.0, "y": 0.0},
         )
 
-        new, updated, deleted = new_step.get_new_updated_deleted_subresources(
-            old_resource=old_step
-        )
+        new, updated, deleted = new_step.get_new_updated_deleted_subresources(old_resource=old_step)
         self.assertEqual(len(new), 1)  # condition_4 is new
         self.assertEqual(new[0].resource_id, "cond-4")
         self.assertEqual(len(updated), 1)  # condition_1 is updated
@@ -3278,9 +3262,7 @@ dtmf_config:
             self.assertIsNotNone(result.asr_biasing)
             self.assertEqual(result.asr_biasing.is_enabled, True)
             self.assertEqual(result.asr_biasing.alphanumeric, True)
-            self.assertEqual(
-                result.asr_biasing.custom_keywords, ["keyword1", "keyword2"]
-            )
+            self.assertEqual(result.asr_biasing.custom_keywords, ["keyword1", "keyword2"])
             # Verify DTMF config
             self.assertIsNotNone(result.dtmf_config)
             self.assertEqual(result.dtmf_config.is_enabled, True)
@@ -3680,7 +3662,9 @@ TEST_FUNCTION_STEP = FunctionStep(
     function_id="FUNCTION-12345678",
     code=TEST_FUNCTION_STEP_CODE,
     parameters=[],
-    latency_control=FunctionLatencyControl(enabled=True, initial_delay=3, interval=0, delay_responses=[]),
+    latency_control=FunctionLatencyControl(
+        enabled=True, initial_delay=3, interval=0, delay_responses=[]
+    ),
     position={"x": 0.0, "y": 0.0},
 )
 
@@ -3766,10 +3750,12 @@ class FunctionStepTests(unittest.TestCase):
             ),
         ]
 
-        with mock_read_from_file({
-            "flows/test_flow/function_steps/my_func.py": code_with_goto,
-            "flows/test_flow/steps/target_step.yaml": step_yaml,
-        }):
+        with mock_read_from_file(
+            {
+                "flows/test_flow/function_steps/my_func.py": code_with_goto,
+                "flows/test_flow/steps/target_step.yaml": step_yaml,
+            }
+        ):
             result = FunctionStep.read_local_resource(
                 file_path="flows/test_flow/function_steps/my_func.py",
                 resource_id="Test Flow_my_func",
@@ -3866,10 +3852,12 @@ class FunctionStepTests(unittest.TestCase):
             ),
         ]
 
-        with mock_read_from_file({
-            "flows/test_flow/function_steps/my_func.py": code,
-            "flows/test_flow/steps/target_step.yaml": step_yaml,
-        }):
+        with mock_read_from_file(
+            {
+                "flows/test_flow/function_steps/my_func.py": code,
+                "flows/test_flow/steps/target_step.yaml": step_yaml,
+            }
+        ):
             result = FunctionStep.read_local_resource(
                 file_path="flows/test_flow/function_steps/my_func.py",
                 resource_id="Test Flow_my_func",
@@ -3905,13 +3893,7 @@ class ExperimentalConfigTests(unittest.TestCase):
         experimental_config = ExperimentalConfig(
             resource_id="experimental-config-123",
             name="experimental_config",
-            config={
-                "asr": {
-                    "provider": "riva",
-                    "model": "poly-latency",
-                    "language": "en-GB"
-                }
-            }
+            config={"asr": {"provider": "riva", "model": "poly-latency", "language": "en-GB"}},
         )
         self.assertIsNone(experimental_config.validate())
 
@@ -3920,13 +3902,7 @@ class ExperimentalConfigTests(unittest.TestCase):
         experimental_config = ExperimentalConfig(
             resource_id="experimental-config-123",
             name="experimental_config",
-            config={
-                "asr": {
-                    "provider": "fakegram",
-                    "model": "nova-2",
-                    "language": "en"
-                }
-            }
+            config={"asr": {"provider": "fakegram", "model": "nova-2", "language": "en"}},
         )
         with self.assertRaises(ValidationError) as cm:
             experimental_config.validate()
@@ -4015,12 +3991,16 @@ class SMSTemplateTests(unittest.TestCase):
             return 1.0 if "sms_templates.yaml" in str(path) else os.path.getmtime(path)
 
         with mock_read_from_file(test_file_pretty_content):
-            with unittest.mock.patch(
-                "poly.resources.resource.os.path.exists", side_effect=exists_sms
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.isfile", side_effect=isfile_sms
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.getmtime", side_effect=getmtime_sms
+            with (
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.exists", side_effect=exists_sms
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.isfile", side_effect=isfile_sms
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.getmtime", side_effect=getmtime_sms
+                ),
             ):
                 result = SMSTemplate.read_local_resource(
                     file_path="config/sms_templates.yaml/sms_templates/test_template_1",
@@ -4051,6 +4031,7 @@ class SMSTemplateTests(unittest.TestCase):
 """
         base_path = "."
         sms_templates_path = os.path.join(base_path, "config", "sms_templates.yaml")
+
         def exists_sms(path):
             return True if "sms_templates.yaml" in str(path) else os.path.exists(path)
 
@@ -4061,14 +4042,17 @@ class SMSTemplateTests(unittest.TestCase):
             return 1.0 if "sms_templates.yaml" in str(path) else os.path.getmtime(path)
 
         with mock_read_from_file({sms_templates_path: test_file_content}):
-            with unittest.mock.patch(
-                "poly.resources.sms.os.path.exists", side_effect=exists_sms
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.exists", side_effect=exists_sms
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.isfile", side_effect=isfile_sms
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.getmtime", side_effect=getmtime_sms
+            with (
+                unittest.mock.patch("poly.resources.sms.os.path.exists", side_effect=exists_sms),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.exists", side_effect=exists_sms
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.isfile", side_effect=isfile_sms
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.getmtime", side_effect=getmtime_sms
+                ),
             ):
                 discovered = SMSTemplate.discover_resources(base_path)
         self.assertEqual(len(discovered), 2)
@@ -4098,14 +4082,17 @@ class SMSTemplateTests(unittest.TestCase):
             return 1.0 if "sms_templates.yaml" in str(path) else os.path.getmtime(path)
 
         with mock_read_from_file({sms_templates_path: test_file_content}):
-            with unittest.mock.patch(
-                "poly.resources.sms.os.path.exists", side_effect=exists_sms
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.exists", side_effect=exists_sms
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.isfile", side_effect=isfile_sms
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.getmtime", side_effect=getmtime_sms
+            with (
+                unittest.mock.patch("poly.resources.sms.os.path.exists", side_effect=exists_sms),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.exists", side_effect=exists_sms
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.isfile", side_effect=isfile_sms
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.getmtime", side_effect=getmtime_sms
+                ),
             ):
                 discovered = SMSTemplate.discover_resources(base_path)
         self.assertEqual(len(discovered), 1)
@@ -4253,9 +4240,7 @@ class SMSTemplateTests(unittest.TestCase):
                 "live": "+447700102347",
             },
         }
-        template = SMSTemplate.from_yaml_dict(
-            yaml_data, "sms-template-123", "test_template"
-        )
+        template = SMSTemplate.from_yaml_dict(yaml_data, "sms-template-123", "test_template")
         self.assertEqual(template.resource_id, "sms-template-123")
         self.assertEqual(template.name, "test_template")
         self.assertEqual(template.text, "Template text")
@@ -4274,9 +4259,7 @@ class SMSTemplateTests(unittest.TestCase):
                 "live": "+447700102347",
             },
         }
-        template = SMSTemplate.from_yaml_dict(
-            yaml_data, "sms-template-123", "test_template"
-        )
+        template = SMSTemplate.from_yaml_dict(yaml_data, "sms-template-123", "test_template")
         self.assertEqual(template.env_phone_numbers.pre_release, "+447700102349")
 
 
@@ -4298,7 +4281,9 @@ class VariantTests(unittest.TestCase):
     def test_to_yaml_dict(self):
         """Test converting variant to YAML dictionary (returns name string)."""
         self.assertEqual(TEST_VARIANT.to_yaml_dict(), {"name": "default"})
-        self.assertEqual(TEST_VARIANT_DEFAULT.to_yaml_dict(), {"name": "default", "is_default": True})
+        self.assertEqual(
+            TEST_VARIANT_DEFAULT.to_yaml_dict(), {"name": "default", "is_default": True}
+        )
 
     def test_from_yaml(self):
         """Test creating variant from YAML data"""
@@ -4307,7 +4292,9 @@ class VariantTests(unittest.TestCase):
         self.assertEqual(variant.name, "test")
         self.assertEqual(variant.is_default, False)
 
-        variant_default: Variant = Variant.from_yaml_dict({"name": "default", "is_default": True}, "VARIANT-default", "default")
+        variant_default: Variant = Variant.from_yaml_dict(
+            {"name": "default", "is_default": True}, "VARIANT-default", "default"
+        )
         self.assertEqual(variant_default.resource_id, "VARIANT-default")
         self.assertEqual(variant_default.name, "default")
         self.assertEqual(variant_default.is_default, True)
@@ -4332,12 +4319,8 @@ class VariantTests(unittest.TestCase):
         with mock_variant_attributes_file(test_file_content, base_path):
             discovered = Variant.discover_resources(base_path)
         self.assertEqual(len(discovered), 2)
-        self.assertIn(
-            os.path.join(variant_attributes_path, "variants", "default"), discovered
-        )
-        self.assertIn(
-            os.path.join(variant_attributes_path, "variants", "production"), discovered
-        )
+        self.assertIn(os.path.join(variant_attributes_path, "variants", "default"), discovered)
+        self.assertIn(os.path.join(variant_attributes_path, "variants", "production"), discovered)
 
     def test_validate_duplicate_name(self):
         """Test validation fails when variant name already exists."""
@@ -4397,14 +4380,22 @@ class VariantTests(unittest.TestCase):
     def test_validate_multiple_default_variants(self):
         """Test validation fails when multiple variants have is_default true."""
         with self.assertRaises(ValueError) as cm:
-            Variant.validate_collection({"variant_1": TEST_VARIANT_DEFAULT, "variant_2": TEST_VARIANT_DEFAULT})
-        self.assertIn("Multiple or zero default variants detected: ['default', 'default']. One variant must be set as default.", str(cm.exception))
+            Variant.validate_collection(
+                {"variant_1": TEST_VARIANT_DEFAULT, "variant_2": TEST_VARIANT_DEFAULT}
+            )
+        self.assertIn(
+            "Multiple or zero default variants detected: ['default', 'default']. One variant must be set as default.",
+            str(cm.exception),
+        )
 
     def test_validate_no_default_variant(self):
         """Test validation fails when no variant has is_default true."""
         with self.assertRaises(ValueError) as cm:
             Variant.validate_collection({"variant_1": TEST_VARIANT, "variant_2": TEST_VARIANT})
-        self.assertIn("Multiple or zero default variants detected: []. One variant must be set as default.", str(cm.exception))
+        self.assertIn(
+            "Multiple or zero default variants detected: []. One variant must be set as default.",
+            str(cm.exception),
+        )
 
 
 class VariantAttributeTests(unittest.TestCase):
@@ -4662,15 +4653,16 @@ class MultiResourceYamlResourceCacheTests(unittest.TestCase):
         def getmtime_sms(path):
             return 1.0 if "sms_templates.yaml" in str(path) else os.path.getmtime(path)
 
-        with unittest.mock.patch(
-            "poly.resources.resource.os.path.exists", side_effect=exists_sms
-        ), unittest.mock.patch(
-            "poly.resources.resource.os.path.isfile", side_effect=isfile_sms
-        ), unittest.mock.patch(
-            "poly.resources.resource.os.path.getmtime", side_effect=getmtime_sms
-        ), unittest.mock.patch(
-            "poly.resources.resource.Resource.read_from_file",
-            side_effect=count_reads,
+        with (
+            unittest.mock.patch("poly.resources.resource.os.path.exists", side_effect=exists_sms),
+            unittest.mock.patch("poly.resources.resource.os.path.isfile", side_effect=isfile_sms),
+            unittest.mock.patch(
+                "poly.resources.resource.os.path.getmtime", side_effect=getmtime_sms
+            ),
+            unittest.mock.patch(
+                "poly.resources.resource.Resource.read_from_file",
+                side_effect=count_reads,
+            ),
         ):
             SMSTemplate.read_local_resource(
                 file_path="config/sms_templates.yaml/sms_templates/template_a",
@@ -4703,10 +4695,10 @@ class MultiResourceYamlResourceCacheTests(unittest.TestCase):
             f.write(initial_content)
         try:
             r1 = SMSTemplate.read_local_resource(
-                    file_path=os.path.join(sms_file, "sms_templates", "only_one"),
-                    resource_id="id-1",
-                    resource_name="only_one",
-                )
+                file_path=os.path.join(sms_file, "sms_templates", "only_one"),
+                resource_id="id-1",
+                resource_name="only_one",
+            )
             self.assertEqual(r1.text, "Original")
             r1.text = "Updated"
             r1.save(base_path)
@@ -4755,15 +4747,16 @@ class MultiResourceYamlResourceCacheTests(unittest.TestCase):
         def read_return_v1_or_v2(path):
             return content_v2 if mtime[0] == 2.0 else content_v1
 
-        with unittest.mock.patch(
-            "poly.resources.resource.os.path.exists", side_effect=exists_sms
-        ), unittest.mock.patch(
-            "poly.resources.resource.os.path.isfile", side_effect=isfile_sms
-        ), unittest.mock.patch(
-            "poly.resources.resource.os.path.getmtime", side_effect=getmtime_sms
-        ), unittest.mock.patch(
-            "poly.resources.resource.Resource.read_from_file",
-            side_effect=read_return_v1_or_v2,
+        with (
+            unittest.mock.patch("poly.resources.resource.os.path.exists", side_effect=exists_sms),
+            unittest.mock.patch("poly.resources.resource.os.path.isfile", side_effect=isfile_sms),
+            unittest.mock.patch(
+                "poly.resources.resource.os.path.getmtime", side_effect=getmtime_sms
+            ),
+            unittest.mock.patch(
+                "poly.resources.resource.Resource.read_from_file",
+                side_effect=read_return_v1_or_v2,
+            ),
         ):
             r1 = SMSTemplate.read_local_resource(
                 file_path="config/sms_templates.yaml/sms_templates/only",
@@ -4892,9 +4885,7 @@ class ChannelSettingsDictFormatTests(unittest.TestCase):
 
     def test_channel_greeting_file_paths(self):
         """VoiceGreeting and ChatGreeting use correct channel config paths."""
-        vg = VoiceGreeting(
-            resource_id="vg", name="vg", welcome_message="Hi", language_code="en-GB"
-        )
+        vg = VoiceGreeting(resource_id="vg", name="vg", welcome_message="Hi", language_code="en-GB")
         cg = ChatGreeting(
             resource_id="cg", name="cg", welcome_message="Hello", language_code="en-US"
         )
@@ -4912,7 +4903,12 @@ class HandoffTests(unittest.TestCase):
             name="Default",
             description="Main handoff",
             is_default=True,
-            sip_config={"method": "invite", "phone_number": "+44", "outbound_endpoint": "sip:foo", "outbound_encryption": "TLS/SRTP"},
+            sip_config={
+                "method": "invite",
+                "phone_number": "+44",
+                "outbound_endpoint": "sip:foo",
+                "outbound_encryption": "TLS/SRTP",
+            },
             sip_headers=[{"key": "X-Foo", "value": "bar"}],
         )
         d = h.to_yaml_dict()
@@ -4927,7 +4923,9 @@ class HandoffTests(unittest.TestCase):
 
     def test_file_path_command_type_prefix(self):
         """file_path, command_type, get_resource_prefix return expected values."""
-        h = Handoff(resource_id="ho-1", name="My Handoff", sip_config={"method": "bye"}, sip_headers=[])
+        h = Handoff(
+            resource_id="ho-1", name="My Handoff", sip_config={"method": "bye"}, sip_headers=[]
+        )
         self.assertIn("config", h.file_path)
         self.assertIn("handoffs.yaml", h.file_path)
         self.assertIn("handoffs", h.file_path)
@@ -4958,14 +4956,19 @@ class HandoffTests(unittest.TestCase):
     def test_validate_and_validate_collection(self):
         """validate raises for missing name, invalid method, invalid encryption; validate_collection for 0/2 defaults."""
         with self.assertRaises(ValueError) as cm:
-            Handoff(resource_id="x", name="", sip_config={"method": "bye"}, sip_headers=[]).validate()
+            Handoff(
+                resource_id="x", name="", sip_config={"method": "bye"}, sip_headers=[]
+            ).validate()
         self.assertIn("name is required", str(cm.exception))
         with self.assertRaises(ValueError) as cm:
-            Handoff(resource_id="x", name="H", sip_config={"method": "invalid"}, sip_headers=[]).validate()
+            Handoff(
+                resource_id="x", name="H", sip_config={"method": "invalid"}, sip_headers=[]
+            ).validate()
         self.assertIn("Invalid SIP method", str(cm.exception))
         with self.assertRaises(ValueError) as cm:
             Handoff(
-                resource_id="x", name="H",
+                resource_id="x",
+                name="H",
                 sip_config={"method": "invite", "outbound_encryption": "bad"},
                 sip_headers=[],
             ).validate()
@@ -4974,13 +4977,35 @@ class HandoffTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             Handoff.validate_collection({})
         with self.assertRaises(ValueError):
-            Handoff.validate_collection({
-                "a": Handoff(resource_id="1", name="A", sip_config={"method": "bye"}, sip_headers=[], is_default=True),
-                "b": Handoff(resource_id="2", name="B", sip_config={"method": "bye"}, sip_headers=[], is_default=True),
-            })
-        Handoff.validate_collection({
-            "a": Handoff(resource_id="1", name="A", sip_config={"method": "bye"}, sip_headers=[], is_default=True),
-        })
+            Handoff.validate_collection(
+                {
+                    "a": Handoff(
+                        resource_id="1",
+                        name="A",
+                        sip_config={"method": "bye"},
+                        sip_headers=[],
+                        is_default=True,
+                    ),
+                    "b": Handoff(
+                        resource_id="2",
+                        name="B",
+                        sip_config={"method": "bye"},
+                        sip_headers=[],
+                        is_default=True,
+                    ),
+                }
+            )
+        Handoff.validate_collection(
+            {
+                "a": Handoff(
+                    resource_id="1",
+                    name="A",
+                    sip_config={"method": "bye"},
+                    sip_headers=[],
+                    is_default=True,
+                ),
+            }
+        )
 
     def test_make_pretty_from_pretty_discover(self):
         """make_pretty/from_pretty pass through to utils; discover_resources returns [] when no file, paths when file exists."""
@@ -4991,19 +5016,30 @@ class HandoffTests(unittest.TestCase):
         handoffs_yaml = "handoffs:\n- name: H1\n  description: ''\n  is_default: true\n  sip_config:\n    method: bye\n  sip_headers: []\n"
         base_path = "."
         path = os.path.join(base_path, "config", "handoffs.yaml")
+
         def exists_handoff(p):
             return path in str(p) or os.path.exists(p)
+
         def isfile_handoff(p):
             return path in str(p) or os.path.isfile(p)
+
         def getmtime_handoff(p):
             return 1.0 if path in str(p) else os.path.getmtime(p)
+
         with mock_read_from_file({path: handoffs_yaml}):
-            with unittest.mock.patch("poly.resources.handoff.os.path.exists", side_effect=exists_handoff), unittest.mock.patch(
-                "poly.resources.resource.os.path.exists", side_effect=exists_handoff
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.isfile", side_effect=isfile_handoff
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.getmtime", side_effect=getmtime_handoff
+            with (
+                unittest.mock.patch(
+                    "poly.resources.handoff.os.path.exists", side_effect=exists_handoff
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.exists", side_effect=exists_handoff
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.isfile", side_effect=isfile_handoff
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.getmtime", side_effect=getmtime_handoff
+                ),
             ):
                 discovered = Handoff.discover_resources(base_path)
         self.assertEqual(len(discovered), 1)
@@ -5022,7 +5058,9 @@ class ApiIntegrationTest(unittest.TestCase):
         c = ApiIntegrationConfig.from_dict(None)
         self.assertEqual(c.base_url, "")
         self.assertEqual(c.auth_type, "none")
-        c = ApiIntegrationConfig.from_dict({"baseUrl": "https://api.example.com", "authType": "oauth2"})
+        c = ApiIntegrationConfig.from_dict(
+            {"baseUrl": "https://api.example.com", "authType": "oauth2"}
+        )
         self.assertEqual(c.base_url, "https://api.example.com")
         self.assertEqual(c.auth_type, "oauth2")
         proto = c.to_proto()
@@ -5058,12 +5096,14 @@ class ApiIntegrationTest(unittest.TestCase):
         op = ApiIntegrationOperation.from_dict(None)
         self.assertEqual(op.resource_id, "")
         self.assertEqual(op.name, "")
-        op = ApiIntegrationOperation.from_dict({
-            "id": "op-abc",
-            "name": "get_ticket",
-            "method": "GET",
-            "resource": "/tickets/{id}",
-        })
+        op = ApiIntegrationOperation.from_dict(
+            {
+                "id": "op-abc",
+                "name": "get_ticket",
+                "method": "GET",
+                "resource": "/tickets/{id}",
+            }
+        )
         self.assertEqual(op.resource_id, "op-abc")
         self.assertEqual(op.name, "get_ticket")
         self.assertEqual(op.method, "GET")
@@ -5093,9 +5133,11 @@ class ApiIntegrationTest(unittest.TestCase):
 
     def test_api_integration_to_yaml_dict_and_from_yaml_dict(self):
         """ApiIntegration to_yaml_dict and from_yaml_dict roundtrip with environments and operations."""
-        env = ApiIntegrationEnvironments.from_dict({
-            "sandbox": {"base_url": "https://sb.com", "auth_type": "none"},
-        })
+        env = ApiIntegrationEnvironments.from_dict(
+            {
+                "sandbox": {"base_url": "https://sb.com", "auth_type": "none"},
+            }
+        )
         ops = [
             ApiIntegrationOperation(resource_id="op-1", name="get", method="GET", resource="/x"),
         ]
@@ -5123,7 +5165,9 @@ class ApiIntegrationTest(unittest.TestCase):
 
     def test_api_integration_build_protos(self):
         """ApiIntegration build_create_proto, build_update_proto, build_delete_proto set id and environments."""
-        env = ApiIntegrationEnvironments.from_dict({"sandbox": {"base_url": "https://x.com", "auth_type": "none"}})
+        env = ApiIntegrationEnvironments.from_dict(
+            {"sandbox": {"base_url": "https://x.com", "auth_type": "none"}}
+        )
         i = ApiIntegration(resource_id="int-1", name="API", description="D", environments=env)
         create = i.build_create_proto()
         self.assertEqual(create.id, "int-1")
@@ -5145,7 +5189,9 @@ class ApiIntegrationTest(unittest.TestCase):
             name="API",
             operations=[op1, op2],
         )
-        new_ops, updated_ops, deleted_ops = new_integration.get_new_updated_deleted_subresources(None)
+        new_ops, updated_ops, deleted_ops = new_integration.get_new_updated_deleted_subresources(
+            None
+        )
         self.assertEqual(len(new_ops), 2)
         self.assertEqual(len(updated_ops), 0)
         self.assertEqual(len(deleted_ops), 0)
@@ -5156,19 +5202,27 @@ class ApiIntegrationTest(unittest.TestCase):
             resource_id="int-1",
             name="API",
             operations=[
-                ApiIntegrationOperation(resource_id="op-1", name="get", method="GET", resource="/a"),
-                ApiIntegrationOperation(resource_id="op-3", name="delete", method="DELETE", resource="/c"),
+                ApiIntegrationOperation(
+                    resource_id="op-1", name="get", method="GET", resource="/a"
+                ),
+                ApiIntegrationOperation(
+                    resource_id="op-3", name="delete", method="DELETE", resource="/c"
+                ),
             ],
         )
         current = ApiIntegration(
             resource_id="int-1",
             name="API",
             operations=[
-                ApiIntegrationOperation(resource_id="op-1", name="get_renamed", method="GET", resource="/a"),
+                ApiIntegrationOperation(
+                    resource_id="op-1", name="get_renamed", method="GET", resource="/a"
+                ),
                 op2,
             ],
         )
-        new_ops, updated_ops, deleted_ops = current.get_new_updated_deleted_subresources(old_integration)
+        new_ops, updated_ops, deleted_ops = current.get_new_updated_deleted_subresources(
+            old_integration
+        )
         self.assertEqual(len(new_ops), 1)
         self.assertEqual(new_ops[0].name, "post")
         self.assertEqual(len(updated_ops), 1)
@@ -5180,18 +5234,22 @@ class ApiIntegrationTest(unittest.TestCase):
     def test_api_integration_discover_resources(self):
         """discover_resources returns [] when no file; returns paths for each integration in the list."""
         import tempfile
+
         self.assertEqual(ApiIntegration.discover_resources("/nonexistent"), [])
         with tempfile.TemporaryDirectory() as tmpdir:
             config_dir = os.path.join(tmpdir, "config")
             os.makedirs(config_dir, exist_ok=True)
             yaml_path = os.path.join(config_dir, "api_integrations.yaml")
             with open(yaml_path, "w") as f:
-                yaml.dump({
-                    "api_integrations": [
-                        {"name": "API One", "description": "First"},
-                        {"name": "API Two", "description": "Second"},
-                    ],
-                }, f)
+                yaml.dump(
+                    {
+                        "api_integrations": [
+                            {"name": "API One", "description": "First"},
+                            {"name": "API Two", "description": "Second"},
+                        ],
+                    },
+                    f,
+                )
             discovered = ApiIntegration.discover_resources(tmpdir)
             self.assertEqual(len(discovered), 2)
             self.assertIn("api_integrations.yaml", discovered[0])
@@ -5201,23 +5259,27 @@ class ApiIntegrationTest(unittest.TestCase):
     def test_api_integration_read_local_resource(self):
         """read_local_resource loads integration from multi-resource path and returns ApiIntegration."""
         import tempfile
+
         with tempfile.TemporaryDirectory() as tmpdir:
             config_dir = os.path.join(tmpdir, "config")
             os.makedirs(config_dir, exist_ok=True)
             yaml_path = os.path.join(config_dir, "api_integrations.yaml")
             with open(yaml_path, "w") as f:
-                yaml.dump({
-                    "api_integrations": [
-                        {
-                            "name": "TestAPI",
-                            "description": "A test",
-                            "environments": {
-                                "sandbox": {"base_url": "https://sb.com", "auth_type": "none"},
+                yaml.dump(
+                    {
+                        "api_integrations": [
+                            {
+                                "name": "TestAPI",
+                                "description": "A test",
+                                "environments": {
+                                    "sandbox": {"base_url": "https://sb.com", "auth_type": "none"},
+                                },
+                                "operations": [{"name": "get", "method": "GET", "resource": "/x"}],
                             },
-                            "operations": [{"name": "get", "method": "GET", "resource": "/x"}],
-                        },
-                    ],
-                }, f)
+                        ],
+                    },
+                    f,
+                )
             resource_path = os.path.join(yaml_path, "api_integrations", "TestAPI")
             integration = ApiIntegration.read_local_resource(
                 file_path=resource_path,
@@ -5268,6 +5330,7 @@ class VariableTest(unittest.TestCase):
     def test_discover_resources_from_functions(self):
         """Variables are discovered from conv.state.<name> in function code."""
         import tempfile
+
         with tempfile.TemporaryDirectory() as tmpdir:
             os.makedirs(os.path.join(tmpdir, "functions"), exist_ok=True)
             os.makedirs(os.path.join(tmpdir, "flows"), exist_ok=True)
@@ -5279,6 +5342,7 @@ class VariableTest(unittest.TestCase):
 
     def test_discover_resources_empty_when_no_functions(self):
         import tempfile
+
         with tempfile.TemporaryDirectory() as tmpdir:
             os.makedirs(os.path.join(tmpdir, "flows"), exist_ok=True)
             discovered = Variable.discover_resources(tmpdir)
@@ -5286,6 +5350,7 @@ class VariableTest(unittest.TestCase):
 
     def test_discover_resources_excludes_commented_conv_state(self):
         import tempfile
+
         with tempfile.TemporaryDirectory() as tmpdir:
             os.makedirs(os.path.join(tmpdir, "functions"), exist_ok=True)
             os.makedirs(os.path.join(tmpdir, "flows"), exist_ok=True)
@@ -5298,8 +5363,9 @@ class VariableTest(unittest.TestCase):
                 [
                     os.path.join(tmpdir, "variables", "actual_var"),
                     os.path.join(tmpdir, "variables", "commented"),
-                ]
+                ],
             )
+
 
 class PhraseFilterTests(unittest.TestCase):
     def setUp(self):
@@ -5452,14 +5518,19 @@ class PhraseFilterTests(unittest.TestCase):
             return 1.0 if yaml_path in str(p) else os.path.getmtime(p)
 
         with mock_read_from_file({yaml_path: yaml_content}):
-            with unittest.mock.patch(
-                "poly.resources.phrase_filter.os.path.exists", side_effect=exists_pf
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.exists", side_effect=exists_pf
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.isfile", side_effect=isfile_pf
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.getmtime", side_effect=getmtime_pf
+            with (
+                unittest.mock.patch(
+                    "poly.resources.phrase_filter.os.path.exists", side_effect=exists_pf
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.exists", side_effect=exists_pf
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.isfile", side_effect=isfile_pf
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.getmtime", side_effect=getmtime_pf
+                ),
             ):
                 discovered = PhraseFilter.discover_resources(base_path)
         self.assertEqual(len(discovered), 2)
@@ -5574,14 +5645,19 @@ class PronunciationTests(unittest.TestCase):
             return 1.0 if yaml_path in str(p) else os.path.getmtime(p)
 
         with mock_read_from_file({yaml_path: yaml_content}):
-            with unittest.mock.patch(
-                "poly.resources.pronunciation.os.path.exists", side_effect=exists_pr
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.exists", side_effect=exists_pr
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.isfile", side_effect=isfile_pr
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.getmtime", side_effect=getmtime_pr
+            with (
+                unittest.mock.patch(
+                    "poly.resources.pronunciation.os.path.exists", side_effect=exists_pr
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.exists", side_effect=exists_pr
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.isfile", side_effect=isfile_pr
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.getmtime", side_effect=getmtime_pr
+                ),
             ):
                 discovered = Pronunciation.discover_resources(base_path)
         self.assertEqual(len(discovered), 3)
@@ -5612,12 +5688,16 @@ class PronunciationTests(unittest.TestCase):
             return 1.0 if "pronunciations.yaml" in str(path) else os.path.getmtime(path)
 
         with mock_read_from_file(yaml_content):
-            with unittest.mock.patch(
-                "poly.resources.resource.os.path.exists", side_effect=exists_pr
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.isfile", side_effect=isfile_pr
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.getmtime", side_effect=getmtime_pr
+            with (
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.exists", side_effect=exists_pr
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.isfile", side_effect=isfile_pr
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.getmtime", side_effect=getmtime_pr
+                ),
             ):
                 result = Pronunciation.read_local_resource(
                     file_path="voice/response_control/pronunciations.yaml/pronunciations/0",
@@ -5691,10 +5771,13 @@ class AsrSettingsTests(unittest.TestCase):
             return "asr_settings.yaml" in str(path) or os.path.isfile(path)
 
         with mock_read_from_file(yaml_content):
-            with unittest.mock.patch(
-                "poly.resources.resource.os.path.exists", side_effect=exists_asr
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.isfile", side_effect=isfile_asr
+            with (
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.exists", side_effect=exists_asr
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.isfile", side_effect=isfile_asr
+                ),
             ):
                 result = AsrSettings.read_local_resource(
                     file_path="voice/speech_recognition/asr_settings.yaml",
@@ -5781,19 +5864,19 @@ class KeyphraseBoostingTests(unittest.TestCase):
             return True if "keyphrase_boosting.yaml" in str(path) else os.path.isfile(path)
 
         def getmtime_kp(path):
-            return (
-                1.0
-                if "keyphrase_boosting.yaml" in str(path)
-                else os.path.getmtime(path)
-            )
+            return 1.0 if "keyphrase_boosting.yaml" in str(path) else os.path.getmtime(path)
 
         with mock_read_from_file(yaml_content):
-            with unittest.mock.patch(
-                "poly.resources.resource.os.path.exists", side_effect=exists_kp
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.isfile", side_effect=isfile_kp
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.getmtime", side_effect=getmtime_kp
+            with (
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.exists", side_effect=exists_kp
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.isfile", side_effect=isfile_kp
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.getmtime", side_effect=getmtime_kp
+                ),
             ):
                 result = KeyphraseBoosting.read_local_resource(
                     file_path="voice/speech_recognition/keyphrase_boosting.yaml/keyphrases/PolyAI",
@@ -5926,33 +6009,25 @@ class TranscriptCorrectionTests(unittest.TestCase):
 """
 
         def exists_tc(path):
-            return (
-                True
-                if "transcript_corrections.yaml" in str(path)
-                else os.path.exists(path)
-            )
+            return True if "transcript_corrections.yaml" in str(path) else os.path.exists(path)
 
         def isfile_tc(path):
-            return (
-                True
-                if "transcript_corrections.yaml" in str(path)
-                else os.path.isfile(path)
-            )
+            return True if "transcript_corrections.yaml" in str(path) else os.path.isfile(path)
 
         def getmtime_tc(path):
-            return (
-                1.0
-                if "transcript_corrections.yaml" in str(path)
-                else os.path.getmtime(path)
-            )
+            return 1.0 if "transcript_corrections.yaml" in str(path) else os.path.getmtime(path)
 
         with mock_read_from_file(yaml_content):
-            with unittest.mock.patch(
-                "poly.resources.resource.os.path.exists", side_effect=exists_tc
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.isfile", side_effect=isfile_tc
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.getmtime", side_effect=getmtime_tc
+            with (
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.exists", side_effect=exists_tc
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.isfile", side_effect=isfile_tc
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.getmtime", side_effect=getmtime_tc
+                ),
             ):
                 result = TranscriptCorrection.read_local_resource(
                     file_path="voice/speech_recognition/transcript_corrections.yaml/corrections/Email_domain_fix",
@@ -6087,7 +6162,9 @@ class TestApiIntegrationValidate(unittest.TestCase):
             operations=[{"name": "list_users", "method": "get", "resource": "/users"}]
         )
         integration.validate()  # should not raise
-        op = ApiIntegrationOperation.from_dict({"name": "list_users", "method": "post", "resource": "/users"})
+        op = ApiIntegrationOperation.from_dict(
+            {"name": "list_users", "method": "post", "resource": "/users"}
+        )
         self.assertEqual(op.method, "POST")
 
     def test_operation_with_empty_method_raises_value_error(self):
@@ -6268,7 +6345,9 @@ class SafetyFiltersTests(unittest.TestCase):
         """VoiceSafetyFilters to_yaml_dict -> from_yaml_dict roundtrip preserves all fields."""
         vsf = self._make_voice_safety_filters()
         d = vsf.to_yaml_dict()
-        vsf2 = VoiceSafetyFilters.from_yaml_dict(d, resource_id="vsf-1", name="voice_safety_filters")
+        vsf2 = VoiceSafetyFilters.from_yaml_dict(
+            d, resource_id="vsf-1", name="voice_safety_filters"
+        )
 
         self.assertEqual(vsf2.enabled, vsf.enabled)
         self.assertEqual(vsf2.filter_type, vsf.filter_type)
@@ -6601,12 +6680,16 @@ class SafetyFiltersTests(unittest.TestCase):
             return 1.0 if "safety_filters.yaml" in str(path) else os.path.getmtime(path)
 
         with mock_read_from_file(yaml_content):
-            with unittest.mock.patch(
-                "poly.resources.resource.os.path.exists", side_effect=exists_sf
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.isfile", side_effect=isfile_sf
-            ), unittest.mock.patch(
-                "poly.resources.resource.os.path.getmtime", side_effect=getmtime_sf
+            with (
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.exists", side_effect=exists_sf
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.isfile", side_effect=isfile_sf
+                ),
+                unittest.mock.patch(
+                    "poly.resources.resource.os.path.getmtime", side_effect=getmtime_sf
+                ),
             ):
                 result = GeneralSafetyFilters.read_local_resource(
                     file_path="agent_settings/safety_filters.yaml",
@@ -6677,18 +6760,22 @@ class SafetyFiltersTests(unittest.TestCase):
         - disabled=True (global off), one category on; upgraded to True
         - disabled=True (global off), all categories off; remains False
         """
+
         def from_projection(disabled, is_active):
-            return SyncClientHandler._read_safety_filters_from_projection({
-                "contentFilterSettings": {
-                    "disabled": disabled, "type": "azure",
-                    "azureConfig": {
-                        "violence": {"isActive": is_active, "precision": "MEDIUM"},
-                        "hate": {"isActive": False, "precision": "MEDIUM"},
-                        "sexual": {"isActive": False, "precision": "MEDIUM"},
-                        "selfHarm": {"isActive": False, "precision": "MEDIUM"},
-                    },
+            return SyncClientHandler._read_safety_filters_from_projection(
+                {
+                    "contentFilterSettings": {
+                        "disabled": disabled,
+                        "type": "azure",
+                        "azureConfig": {
+                            "violence": {"isActive": is_active, "precision": "MEDIUM"},
+                            "hate": {"isActive": False, "precision": "MEDIUM"},
+                            "sexual": {"isActive": False, "precision": "MEDIUM"},
+                            "selfHarm": {"isActive": False, "precision": "MEDIUM"},
+                        },
+                    }
                 }
-            })["safety_filters"]
+            )["safety_filters"]
 
         self.assertTrue(from_projection(disabled=False, is_active=False).enabled)
         self.assertTrue(from_projection(disabled=True, is_active=True).enabled)
@@ -6703,11 +6790,7 @@ class SafetyFiltersTests(unittest.TestCase):
         """_read_channel_settings_from_projection parses voice channel safety filters."""
         projection = {
             "channels": {
-                "voice": {
-                    "config": {
-                        "safetyFilters": self._make_content_filter_projection()
-                    }
-                }
+                "voice": {"config": {"safetyFilters": self._make_content_filter_projection()}}
             }
         }
         result = SyncClientHandler._read_channel_settings_from_projection(projection)
@@ -6899,8 +6982,7 @@ class SafetyFiltersTests(unittest.TestCase):
         self.assertNotIn("precision", d["categories"]["sexual"])
 
     def test_misnamed_category_in_yaml_raises_unrecognised_error(self):
-        """validate() reports unrecognised category names rather than silently dropping them.
-        """
+        """validate() reports unrecognised category names rather than silently dropping them."""
         for invalid_name in ("haet", "crime"):
             with self.subTest(invalid_name=invalid_name):
                 yaml_dict = {
@@ -6949,17 +7031,21 @@ class SafetyFiltersTests(unittest.TestCase):
         If any category is set to True, then so is global
         to_yaml_dict roundtrip confirms enabled never appears in the file.
         """
-        base = {"hate": {"enabled": False, "level": "medium"},
-                "sexual": {"enabled": False, "level": "lenient"},
-                "self_harm": {"enabled": False, "level": "strict"}}
+        base = {
+            "hate": {"enabled": False, "level": "medium"},
+            "sexual": {"enabled": False, "level": "lenient"},
+            "self_harm": {"enabled": False, "level": "strict"},
+        }
 
         sf_on = GeneralSafetyFilters.from_yaml_dict(
             {"categories": {"violence": {"enabled": True, "level": "strict"}, **base}},
-            resource_id="sf-1", name="safety_filters",
+            resource_id="sf-1",
+            name="safety_filters",
         )
         sf_off = GeneralSafetyFilters.from_yaml_dict(
             {"categories": {"violence": {"enabled": False, "level": "strict"}, **base}},
-            resource_id="sf-1", name="safety_filters",
+            resource_id="sf-1",
+            name="safety_filters",
         )
 
         self.assertTrue(sf_on.enabled)
@@ -6973,11 +7059,15 @@ class SafetyFiltersTests(unittest.TestCase):
             with self.subTest(cls=cls.__name__):
                 for enabled_val in (True, False):
                     sf = cls.from_yaml_dict(
-                        {"enabled": enabled_val, "categories": {
-                            cat: {"enabled": True, "level": "strict"}
-                            for cat in ("violence", "hate", "sexual", "self_harm")
-                        }},
-                        resource_id="sf-1", name="sf",
+                        {
+                            "enabled": enabled_val,
+                            "categories": {
+                                cat: {"enabled": True, "level": "strict"}
+                                for cat in ("violence", "hate", "sexual", "self_harm")
+                            },
+                        },
+                        resource_id="sf-1",
+                        name="sf",
                     )
                     self.assertEqual(sf.enabled, enabled_val)
                     self.assertIn("enabled", sf.to_yaml_dict())
@@ -7252,11 +7342,7 @@ class ExtractGoToFlowsTests(unittest.TestCase):
 
     def test_multiple_flows(self):
         """Multiple goto_flow calls are all extracted."""
-        code = (
-            'conv.goto_flow("flow_a")\n'
-            "conv.goto_flow('flow_b')\n"
-            'conv.goto_flow("flow_c")\n'
-        )
+        code = 'conv.goto_flow("flow_a")\nconv.goto_flow(\'flow_b\')\nconv.goto_flow("flow_c")\n'
         self.assertEqual(extract_go_to_flows(code), ["flow_a", "flow_b", "flow_c"])
 
     def test_no_matches_returns_empty_list(self):
@@ -7303,8 +7389,9 @@ def _make_step(name, step_id, flow_id="flow-1", conditions=None, position=None):
     )
 
 
-def _make_condition(name, cond_id, step_id, flow_id="flow-1", child_step="",
-                    condition_type=ConditionType.STEP):
+def _make_condition(
+    name, cond_id, step_id, flow_id="flow-1", child_step="", condition_type=ConditionType.STEP
+):
     return Condition(
         resource_id=cond_id,
         name=name,
@@ -7315,8 +7402,15 @@ def _make_condition(name, cond_id, step_id, flow_id="flow-1", child_step="",
     )
 
 
-def _make_function_step(name, step_id, flow_id="flow-1", flow_name="Test Flow",
-                        code="def f(conv, flow): pass", position=None):
+def _make_function_step(
+    name,
+    step_id,
+    flow_id="flow-1",
+    flow_name="Test Flow",
+    code="def f(conv, flow): pass",
+    position=None,
+    conditions=None,
+):
     return FunctionStep(
         resource_id=f"{flow_id}_{step_id}",
         step_id=step_id,
@@ -7325,6 +7419,7 @@ def _make_function_step(name, step_id, flow_id="flow-1", flow_name="Test Flow",
         flow_name=flow_name,
         code=code,
         position=position,
+        conditions=conditions or [],
     )
 
 
@@ -7333,12 +7428,20 @@ class FlowLayoutTests(unittest.TestCase):
 
     def test_linear_flow(self):
         """A -> B -> C: nodes stacked vertically, centered at x=0."""
-        a = _make_step("A", "s-a", conditions=[
-            _make_condition("go_b", "c-1", "s-a", child_step="B"),
-        ])
-        b = _make_step("B", "s-b", conditions=[
-            _make_condition("go_c", "c-2", "s-b", child_step="C"),
-        ])
+        a = _make_step(
+            "A",
+            "s-a",
+            conditions=[
+                _make_condition("go_b", "c-1", "s-a", child_step="B"),
+            ],
+        )
+        b = _make_step(
+            "B",
+            "s-b",
+            conditions=[
+                _make_condition("go_c", "c-2", "s-b", child_step="C"),
+            ],
+        )
         c = _make_step("C", "s-c")
 
         assign_flow_positions([a, b, c], start_node_id="s-a", clean=True)
@@ -7352,10 +7455,14 @@ class FlowLayoutTests(unittest.TestCase):
 
     def test_branching_flow(self):
         """A -> B, A -> C: B and C side by side below A."""
-        a = _make_step("A", "s-a", conditions=[
-            _make_condition("go_b", "c-1", "s-a", child_step="B"),
-            _make_condition("go_c", "c-2", "s-a", child_step="C"),
-        ])
+        a = _make_step(
+            "A",
+            "s-a",
+            conditions=[
+                _make_condition("go_b", "c-1", "s-a", child_step="B"),
+                _make_condition("go_c", "c-2", "s-a", child_step="C"),
+            ],
+        )
         b = _make_step("B", "s-b")
         c = _make_step("C", "s-c")
 
@@ -7369,12 +7476,20 @@ class FlowLayoutTests(unittest.TestCase):
 
     def test_cycle_no_infinite_loop(self):
         """A -> B -> A: both get positioned without hanging."""
-        a = _make_step("A", "s-a", conditions=[
-            _make_condition("go_b", "c-1", "s-a", child_step="B"),
-        ])
-        b = _make_step("B", "s-b", conditions=[
-            _make_condition("go_a", "c-2", "s-b", child_step="A"),
-        ])
+        a = _make_step(
+            "A",
+            "s-a",
+            conditions=[
+                _make_condition("go_b", "c-1", "s-a", child_step="B"),
+            ],
+        )
+        b = _make_step(
+            "B",
+            "s-b",
+            conditions=[
+                _make_condition("go_a", "c-2", "s-b", child_step="A"),
+            ],
+        )
 
         assign_flow_positions([a, b], start_node_id="s-a", clean=True)
         print("\n=== Cycle Flow ===")
@@ -7386,11 +7501,14 @@ class FlowLayoutTests(unittest.TestCase):
 
     def test_exit_flow_condition(self):
         """Exit flow conditions create virtual nodes below parent."""
-        a = _make_step("A", "s-a", conditions=[
-            _make_condition("go_b", "c-1", "s-a", child_step="B"),
-            _make_condition("exit", "c-2", "s-a",
-                            condition_type=ConditionType.EXIT_FLOW),
-        ])
+        a = _make_step(
+            "A",
+            "s-a",
+            conditions=[
+                _make_condition("go_b", "c-1", "s-a", child_step="B"),
+                _make_condition("exit", "c-2", "s-a", condition_type=ConditionType.EXIT_FLOW),
+            ],
+        )
         b = _make_step("B", "s-b")
 
         assign_flow_positions([a, b], start_node_id="s-a", clean=True)
@@ -7404,9 +7522,14 @@ class FlowLayoutTests(unittest.TestCase):
 
     def test_existing_positions_recomputed(self):
         """All positions are recomputed even if nodes already have positions."""
-        a = _make_step("A", "s-a", conditions=[
-            _make_condition("go_b", "c-1", "s-a", child_step="B"),
-        ], position={"x": 999.0, "y": 888.0})
+        a = _make_step(
+            "A",
+            "s-a",
+            conditions=[
+                _make_condition("go_b", "c-1", "s-a", child_step="B"),
+            ],
+            position={"x": 999.0, "y": 888.0},
+        )
         b = _make_step("B", "s-b", position={"x": 999.0, "y": 888.0})
 
         assign_flow_positions([a, b], start_node_id="s-a", clean=True)
@@ -7415,29 +7538,47 @@ class FlowLayoutTests(unittest.TestCase):
         self.assertNotEqual(a.position["y"], b.position["y"])
         self.assertLess(a.position["y"], b.position["y"])
 
-    def test_condition_label_positions_midpoint(self):
-        """Condition labels are placed at the midpoint between parent and child."""
-        a = _make_step("A", "s-a", conditions=[
-            _make_condition("go_b", "c-1", "s-a", child_step="B"),
-        ])
+    def test_condition_label_not_overlapping_nodes(self):
+        """Condition labels don't overlap with node cards."""
+        a = _make_step(
+            "A",
+            "s-a",
+            conditions=[
+                _make_condition("go_b", "c-1", "s-a", child_step="B"),
+            ],
+        )
         b = _make_step("B", "s-b")
 
         assign_flow_positions([a, b], start_node_id="s-a", clean=True)
 
         cond = a.conditions[0]
-        self.assertAlmostEqual(
-            cond.position["x"], (a.position["x"] + b.position["x"]) / 2
-        )
-        self.assertAlmostEqual(
-            cond.position["y"], (a.position["y"] + b.position["y"]) / 2
-        )
+        self.assertTrue(cond.position)
+        self.assertAlmostEqual(cond.position["y"], (a.position["y"] + b.position["y"]) / 2)
+
+    def test_back_edge_label_beside_parent(self):
+        """Back-edge condition labels are placed beside the parent, not on top."""
+        a = _make_step("A", "s-a", conditions=[
+            _make_condition("go_b", "c-1", "s-a", child_step="B"),
+        ])
+        b = _make_step("B", "s-b", conditions=[
+            _make_condition("back_to_a", "c-2", "s-b", child_step="A"),
+        ])
+
+        assign_flow_positions([a, b], start_node_id="s-a", clean=True)
+
+        back_cond = b.conditions[0]
+        self.assertTrue(back_cond.position)
+        self.assertGreater(back_cond.position["x"], b.position["x"])
 
     def test_exit_condition_label_midpoint(self):
         """Exit flow condition label is midpoint between parent and exit node."""
-        a = _make_step("A", "s-a", conditions=[
-            _make_condition("exit", "c-1", "s-a",
-                            condition_type=ConditionType.EXIT_FLOW),
-        ])
+        a = _make_step(
+            "A",
+            "s-a",
+            conditions=[
+                _make_condition("exit", "c-1", "s-a", condition_type=ConditionType.EXIT_FLOW),
+            ],
+        )
 
         assign_flow_positions([a], start_node_id="s-a", clean=True)
 
@@ -7452,19 +7593,26 @@ class FlowLayoutTests(unittest.TestCase):
             (a.position["y"] + cond.exit_flow_position["y"]) / 2,
         )
 
-    def test_function_step_goto_edge(self):
-        """FunctionStep with goto_step() creates an edge to the target."""
-        a = _make_step("A", "s-a", conditions=[
-            _make_condition("go_func", "c-1", "s-a", child_step="do_work"),
-        ])
+    def test_function_step_with_conditions(self):
+        """FunctionStep with conditions creates edges to targets."""
+        a = _make_step(
+            "A",
+            "s-a",
+            conditions=[
+                _make_condition("go_func", "c-1", "s-a", child_step="do_work"),
+            ],
+        )
         func = _make_function_step(
-            "do_work", "s-func",
-            code='def f(conv, flow):\n    flow.goto_step("B")\n',
+            "do_work",
+            "s-func",
+            conditions=[
+                _make_condition("go_b", "c-2", "s-func", child_step="B"),
+            ],
         )
         b = _make_step("B", "s-b")
 
         assign_flow_positions([a, func, b], start_node_id="s-a", clean=True)
-        print("\n=== FunctionStep goto ===")
+        print("\n=== FunctionStep conditions ===")
         print(_visualize_layout([a, func, b]))
 
         # A at top, func below A, B below func
@@ -7473,20 +7621,31 @@ class FlowLayoutTests(unittest.TestCase):
 
     def test_hotel_booking_flow(self):
         """Integration test matching the hotel booking flow from the screenshot."""
-        collect = _make_step("Collect Details", "s-collect", conditions=[
-            _make_condition("All details collected", "c-1", "s-collect",
-                            child_step="Confirm Booking"),
-        ])
-        confirm = _make_step("Confirm Booking", "s-confirm", conditions=[
-            _make_condition("Booking confirmed", "c-2", "s-confirm",
-                            child_step="process_handoff"),
-            _make_condition("Change details", "c-3", "s-confirm",
-                            child_step="Collect Details"),
-            _make_condition("Cancel booking", "c-4", "s-confirm",
-                            condition_type=ConditionType.EXIT_FLOW),
-        ])
+        collect = _make_step(
+            "Collect Details",
+            "s-collect",
+            conditions=[
+                _make_condition(
+                    "All details collected", "c-1", "s-collect", child_step="Confirm Booking"
+                ),
+            ],
+        )
+        confirm = _make_step(
+            "Confirm Booking",
+            "s-confirm",
+            conditions=[
+                _make_condition(
+                    "Booking confirmed", "c-2", "s-confirm", child_step="process_handoff"
+                ),
+                _make_condition("Change details", "c-3", "s-confirm", child_step="Collect Details"),
+                _make_condition(
+                    "Cancel booking", "c-4", "s-confirm", condition_type=ConditionType.EXIT_FLOW
+                ),
+            ],
+        )
         handoff = _make_function_step(
-            "process_handoff", "s-handoff",
+            "process_handoff",
+            "s-handoff",
             code='def process_handoff(conv, flow):\n    conv.call_handoff("Default")\n',
         )
 
@@ -7507,9 +7666,7 @@ class FlowLayoutTests(unittest.TestCase):
         self.assertEqual(cancel_cond.exit_flow_position["y"], handoff.position["y"])
 
         # Handoff and exit node side by side (different x)
-        self.assertNotEqual(
-            handoff.position["x"], cancel_cond.exit_flow_position["x"]
-        )
+        self.assertNotEqual(handoff.position["x"], cancel_cond.exit_flow_position["x"])
 
         # No overlapping: handoff and exit separated by at least NODE_SEP
         x_diff = abs(handoff.position["x"] - cancel_cond.exit_flow_position["x"])
@@ -7525,13 +7682,17 @@ class FlowLayoutTests(unittest.TestCase):
     def test_flow_function_routing(self):
         """Steps with {{ft:func}} in prompts route through flow function goto_step."""
         a = _make_step("A", "s-a")
-        a.prompt = 'Ask the question then call {{ft:do_routing}}'
+        a.prompt = "Ask the question then call {{ft:do_routing}}"
         b = _make_step("B", "s-b")
 
-        mock_func = type("MockFunc", (), {
-            "name": "do_routing",
-            "code": 'def do_routing(conv, flow):\n    flow.goto_step("B")\n',
-        })()
+        mock_func = type(
+            "MockFunc",
+            (),
+            {
+                "name": "do_routing",
+                "code": 'def do_routing(conv, flow):\n    flow.goto_step("B")\n',
+            },
+        )()
 
         assign_flow_positions([a, b], start_node_id="s-a", flow_functions=[mock_func], clean=True)
         print("\n=== Flow Function Routing ===")
