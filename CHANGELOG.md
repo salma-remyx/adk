@@ -1,6 +1,44 @@
 # CHANGELOG
 
 
+## v0.22.1 (2026-05-27)
+
+### Bug Fixes
+
+- Allow disabled non-standard adjectives in personality settings
+  ([#163](https://github.com/polyai/adk/pull/163),
+  [`1976948`](https://github.com/polyai/adk/commit/19769489ce2d4296cd0e0450f3fc46c27d071a4f))
+
+## Summary
+
+Fixes personality validation to only reject *enabled* invalid adjectives, and filters out
+  non-allowed adjectives from the update proto payload.
+
+## Motivation
+
+The platform can return adjectives not in the local allowed set (e.g. deprecated or new adjectives).
+  Previously, having any such adjective in the local YAML — even disabled — would block pushes. Now
+  disabled non-standard adjectives pass validation and are silently excluded from the update.
+
+## Changes
+
+- `validate()` now only raises on invalid adjectives that are enabled (`True`) -
+  `build_update_proto()` filters the adjectives dict to only include allowed keys - Updated error
+  message to clarify "Enabled adjectives" - Added tests for disabled invalid adjective validation
+  and proto filtering
+
+## Test plan
+
+- [x] Added/updated unit tests (`SettingsPersonalityTests`) - [ ] Manual CLI testing (`poly
+  <command>`) - [ ] Tested against a live Agent Studio project
+
+Replicates https://github.com/PolyAI-LDN/local_agent_studio/pull/141
+
+Made with [Cursor](https://cursor.com)
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+
 ## v0.22.0 (2026-05-27)
 
 ### Features
