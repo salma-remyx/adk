@@ -31,21 +31,6 @@ When reviewing PRs:
 - Complex algorithms should have explanatory comments
 - README files must be kept up to date
 
-# Version bumping
-
-This project is versioned in pyproject.toml. There is an autotool that increases the patch version every push. However for changes that affect the tools output to disk, this should come with a minor update.
-
-Patch:
-- Bug fix
-- Small feature that doesn't change any current interaction
-
-Minor:
-- Changing output style
-- Feature updates
-
-Major:
-- Complete rework of core/major output difference
-
 # Resource Classes
 
 ## Adding New Resource Types
