@@ -1,6 +1,56 @@
 # CHANGELOG
 
 
+## v0.22.2 (2026-05-28)
+
+### Bug Fixes
+
+- Defer API key lookup until first SourcererSDK HTTP request
+  ([#164](https://github.com/polyai/adk/pull/164),
+  [`a90be40`](https://github.com/polyai/adk/commit/a90be407bfcc0c88abfed460910d39c6deaaea84))
+
+## Summary
+
+Lazy-initialize the `SourcererSDK` HTTP session so `retrieve_api_key()` runs on the first API
+  request, not during `__init__`.
+
+## Motivation
+
+Offline CLI workflows (`poly pull --from-projection`, `poly push --dry-run --output-json-commands`)
+  still construct `SyncClientHandler` / `SourcererSDK` even when no HTTP calls are made. Resolving
+  credentials in `__init__` caused those flows to fail when `POLY_ADK_KEY` was unset.
+
+## Changes
+
+- Add a lazy `session` property on `SourcererSDK` that builds the `requests.Session` and auth
+  headers on first use - Remove eager session creation and `retrieve_api_key()` from
+  `SourcererSDK.__init__`
+
+## Test strategy
+
+- [ ] Added/updated unit tests - [x] Manual CLI testing (`poly <command>`) - [ ] Tested against a
+  live Agent Studio project - [ ] N/A (docs, config, or trivial change)
+
+Manual checks:
+
+- [x] `poly push --from-projection - < proj.json --json --dry-run --output-json-commands` works
+  without `POLY_ADK_KEY` when `branch_id` is set in `project.yaml` - [x] `poly push` still
+  authenticates and sends when API key is configured - [x] `poly pull` / branch operations still
+  work with a valid API key
+
+## Checklist
+
+- [x] `ruff check .` and `ruff format --check .` pass (pre-commit on commit) - [ ] `pytest` passes -
+  [x] No breaking changes to the `poly` CLI interface (or migration path documented) - [x] Commit
+  messages follow [conventional commits](https://www.conventionalcommits.org/)
+
+## Screenshots / Logs
+
+N/A
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+
 ## v0.22.1 (2026-05-27)
 
 ### Bug Fixes
