@@ -106,7 +106,7 @@ These placeholders can be used in prompts, rules, topics, and other text fields 
 | `{{attr:attribute_name}}` | Variant attribute | Rules, prompts, topics (actions), greeting, disclaimer, personality, role |
 | `{{twilio_sms:template_name}}` | SMS template | Rules, topics (actions) |
 | `{{ho:handoff_name}}` | Handoff destination | Rules |
-| `{{vrbl:variable_name}}` (preferred) / `$variable_name` | State variable (interchangeable; `{{vrbl:...}}` is validated) | Prompts, topic actions, SMS templates |
+| `{{vrbl:variable_name}}` | State variable | Prompts, topic actions, SMS templates |
 
 ## Documentation
 
