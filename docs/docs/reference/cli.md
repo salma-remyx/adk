@@ -109,7 +109,7 @@ poly project create --base-path /path/to/projects
 | `--region` | Region for the new project. Choices match the standard region list. |
 | `--account_id` | Account ID to create the project under. |
 | `--name` | Display name for the new project. |
-| `--id`, `--project_id` | Optional slug/ID for the project. Defaults to a slugified version of the name. |
+| `--id`, `--project_id` | Optional slug/ID for the project. Defaults to a slugified version of the name. If omitted in JSON mode, the platform generates one automatically. |
 | `--greeting` | Initial greeting message for the agent. Defaults to `"Hello, how can I help you?"`. |
 | `--voice-id` | Voice ID for the agent. Defaults to a region-specific voice if not supplied. |
 | `--base-path` | Base path to initialize the project in. Defaults to the current working directory. |
@@ -117,7 +117,7 @@ poly project create --base-path /path/to/projects
 
 !!! info "`--json` requires explicit flags for `poly project create`"
 
-    When using `poly project create --json`, you must supply `--region`, `--account_id`, and `--name` explicitly. Interactive prompts are not supported in JSON mode.
+    When using `poly project create --json`, you must supply `--region`, `--account_id`, and `--name` explicitly. Interactive prompts are not supported in JSON mode. The `--id` flag is optional — if omitted, the platform generates a project ID automatically.
 
 #### Error handling
 
@@ -743,7 +743,7 @@ Error responses always include `{ "success": false, "error": "...", "traceback":
 
 !!! info "`poly project create` with `--json` requires explicit flags"
 
-    When using `poly project create --json`, you must supply `--region`, `--account_id`, and `--name` explicitly. Interactive prompts are not supported in JSON mode.
+    When using `poly project create --json`, you must supply `--region`, `--account_id`, and `--name` explicitly. Interactive prompts are not supported in JSON mode. The `--id` / `--project_id` flag is optional — if omitted, the platform generates a project ID automatically.
 
 #### `poly chat --json` output shape
 
