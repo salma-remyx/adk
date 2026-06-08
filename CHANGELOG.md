@@ -1,6 +1,63 @@
 # CHANGELOG
 
 
+## v0.25.0 (2026-06-08)
+
+### Features
+
+- Add Agent Studio test suite support ([#165](https://github.com/polyai/adk/pull/165),
+  [`56e7eac`](https://github.com/polyai/adk/commit/56e7eac6778424699e65acf0843118c9d70512f8))
+
+## Summary
+
+Adds local ADK support for Agent Studio test cases, including YAML resources under `test_suite/`,
+  protobuf sync commands, pull/push integration, documentation, and unit tests.
+
+## Motivation
+
+Agent Studio now supports simulated conversation tests with prompt and function-call assertions. The
+  ADK needs to read, write, validate, and sync these resources locally so projects can manage tests
+  alongside other agent configuration.
+
+## Changes
+
+- Add `TestCase`, `TestCaseAssertion`, `TestCaseTags`, and function-call assertion types in
+  `src/poly/resources/test_suite.py` - Register test cases in project resource mapping and sync
+  client projection parsing - Update protobuf bindings (including new `testing_pb2`) and command
+  types for create/update/delete/assertions/tags - Add `tests.md` documentation and link it from the
+  main docs index - Add unit tests in `resources_test.py` and project discovery coverage in
+  `project_test.py` - Add sample test cases to the test project
+  (`test_suite/greeting_flow_test.yaml`, `test_suite/webchat_smoke_test.yaml`) - Set `__test__ =
+  False` on resource classes to avoid pytest collection warnings - Validate test case `language`
+  against configured project languages (default + additional) - Validate function call assertion
+  names against known global functions
+
+## Test strategy
+
+- [x] Added/updated unit tests - [ ] Manual CLI testing (`poly <command>`) - [ ] Tested against a
+  live Agent Studio project - [ ] N/A (docs, config, or trivial change)
+
+## Checklist
+
+- [x] `ruff check .` and `ruff format --check .` pass - [x] `pytest` passes - [x] No breaking
+  changes to the `poly` CLI interface (or migration path documented) - [x] Commit messages follow
+  [conventional commits](https://www.conventionalcommits.org/)
+
+## Screenshots / Logs
+
+```yaml name: Test Weather flow
+
+scenario: Ask for the weather for berlin.
+
+channel: voice
+
+language: es-ES
+
+tags: - weather prompt_assertions: - It gives the weather - It gives the weather for Berlin
+  function_call_assertions: - name: get_weather arguments: - parameter_name: city expected_value:
+  Berlin value_type: string ```
+
+
 ## v0.24.0 (2026-06-08)
 
 ### Features
