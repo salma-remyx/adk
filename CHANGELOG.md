@@ -1,6 +1,44 @@
 # CHANGELOG
 
 
+## v0.23.3 (2026-06-08)
+
+### Bug Fixes
+
+- Skip interactive project_id prompt when --output-json is set
+  ([#175](https://github.com/polyai/adk/pull/175),
+  [`d8f5eca`](https://github.com/polyai/adk/commit/d8f5eca2b66591dea405f76bb83c239f774f4446))
+
+## Summary
+
+Skip the interactive `project_id` prompt during `poly create` when `--json` is passed, since JSON
+  output mode is non-interactive.
+
+## Motivation
+
+When using `poly create --json`, the CLI shouldn't prompt for interactive input — it should let the
+  platform generate the project ID automatically.
+
+## Changes
+
+- Added `and not output_json` guard to the `project_id` prompt condition in `cli.py`
+
+## Test strategy
+
+- [ ] Added/updated unit tests - [x] Manual CLI testing (`poly create --json`) - [ ] Tested against
+  a live Agent Studio project - [ ] N/A (docs, config, or trivial change)
+
+## Checklist
+
+- [x] `ruff check .` and `ruff format --check .` pass - [x] `pytest` passes - [x] No breaking
+  changes to the `poly` CLI interface (or migration path documented) - [x] Commit messages follow
+  [conventional commits](https://www.conventionalcommits.org/)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+
 ## v0.23.2 (2026-06-08)
 
 ### Bug Fixes
