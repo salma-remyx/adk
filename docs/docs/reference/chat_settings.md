@@ -10,8 +10,11 @@ Chat settings configure how the agent behaves on the web chat channel.
 They are defined in <code>chat/configuration.yaml</code>.
 </p>
 
-!!! note "Platform-provisioned — update only"
-    Chat settings are created automatically when a project is created. They can be updated with `poly push` but not created from scratch. See the [equivalent note on agent settings](./agent_settings.md) for details.
+!!! note "Webchat configs must all be present together"
+    `ChatGreeting`, `ChatStylePrompt`, and `ChatSafetyFilters` (the three webchat config resources) follow an all-or-nothing rule: if any one of them is present in your project, all three must be present. Pushing only a subset raises a validation error listing the missing types.
+
+!!! info "Pushing new webchat configs enables the webchat channel automatically"
+    When you push webchat config resources for the first time, the ADK automatically enables the webchat channel on the platform. You do not need to enable it manually in Agent Studio. The configs are sent as updates internally, so the push behaves correctly whether or not the channel was previously enabled.
 
 ## Location
 
