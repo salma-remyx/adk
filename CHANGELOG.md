@@ -1,6 +1,51 @@
 # CHANGELOG
 
 
+## v0.24.0 (2026-06-08)
+
+### Features
+
+- Webchat config validation and push support ([#173](https://github.com/polyai/adk/pull/173),
+  [`93e52a0`](https://github.com/polyai/adk/commit/93e52a095c317f5326f55ad713877a5ab0dfe805))
+
+## Summary
+
+- Add all-or-nothing validation for webchat config resources (ChatGreeting, ChatSafetyFilters,
+  ChatStylePrompt) - On push, new webchat configs enable the webchat channel and are sent as updates
+  instead of creates - Add `queue_command` to SyncClientHandler and AgentStudioInterface for queuing
+  individual commands
+
+## Motivation
+
+Previously, to enable webchat you had to do it manually on the platform — it couldn't be done
+  through ADK. This change allows ADK to enable the webchat channel automatically when webchat
+  configs are pushed, and validates that all three config types are present together.
+
+## Changes
+
+- `resource_utils.validate_webchat_siblings()` — validates all three webchat types are present when
+  any one is - `ChatGreeting`, `ChatSafetyFilters`, `ChatStylePrompt` — override `validate()` to
+  call sibling check - `SyncClientHandler.queue_command()` / `AgentStudioInterface.queue_command()`
+  — queue a single command - `utils.create_command_webchat_channel_update_status()` — create
+  enable/disable channel command - `project._clean_resources_before_push()` — move new webchat
+  configs to pre-push updates and queue enable command
+
+## Test strategy
+
+- [x] Added/updated unit tests - [ ] Manual CLI testing (`poly <command>`) - [ ] Tested against a
+  live Agent Studio project - [ ] N/A (docs, config, or trivial change)
+
+## Checklist
+
+- [x] `ruff check .` and `ruff format --check .` pass - [x] `pytest` passes - [x] No breaking
+  changes to the `poly` CLI interface (or migration path documented) - [x] Commit messages follow
+  [conventional commits](https://www.conventionalcommits.org/)
+
+---------
+
+Co-authored-by: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+
 ## v0.23.3 (2026-06-08)
 
 ### Bug Fixes
