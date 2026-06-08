@@ -30,6 +30,8 @@ from poly.resources import (
     FlowConfig,
     FlowStep,
     Function,
+    FunctionCallArgumentAssertion,
+    FunctionCallAssertion,
     FunctionDelayResponse,
     FunctionLatencyControl,
     FunctionParameters,
@@ -47,6 +49,9 @@ from poly.resources import (
     SettingsRole,
     SettingsRules,
     SMSTemplate,
+    TestCase,
+    TestCaseAssertion,
+    TestCaseTags,
     Topic,
     TranscriptCorrection,
     Translation,
@@ -142,6 +147,7 @@ class SyncClientHandler:
             AsrSettings: cls._read_asr_settings_from_projection(projection),
             GeneralSafetyFilters: cls._read_safety_filters_from_projection(projection),
             ApiIntegration: cls._read_api_integrations_from_projection(projection),
+            TestCase: cls._read_test_cases_from_projection(projection),
             Translation: cls._read_translations_from_projection(projection),
             **cls._read_languages_from_projection(projection),
         }  # ty:ignore[invalid-return-type]
@@ -906,6 +912,53 @@ class SyncClientHandler:
             )
 
         return api_integrations
+
+    def _read_test_cases_from_projection(
+        projection: dict,
+    ) -> dict[type[Resource], dict[str, Resource]]:
+        test_cases = {}
+        for test_case_id, test_case_data in (
+            projection.get("testing", {}).get("testCases", {}).get("entities", {}).items()
+        ):
+            prompt_assertions = []
+            function_assertions = []
+            for assertion in test_case_data.get("assertions", []):
+                assertion_payload = assertion.get("payload", {})
+                if assertion_payload.get("$case") == "prompt":
+                    prompt_assertions.append(assertion_payload.get("value").get("value"))
+                elif assertion_payload.get("$case") == "functionCall":
+                    assertion_value = assertion_payload.get("value", {})
+                    arguments = [
+                        FunctionCallArgumentAssertion(
+                            parameter_name=arg,
+                            expected_value=arg_values.get("expectedValue"),
+                            value_type=arg_values.get("valueType"),
+                        )
+                        for arg, arg_values in assertion_value.get("arguments").items()
+                    ]
+                    function_assertions.append(
+                        FunctionCallAssertion(name=assertion_value.get("name"), arguments=arguments)
+                    )
+            assertions = TestCaseAssertion(
+                resource_id=test_case_id,
+                name="assertions",
+                prompts=prompt_assertions,
+                function_calls=function_assertions,
+            )
+            tags = TestCaseTags(
+                resource_id=test_case_id, name="tags", tags=test_case_data.get("tags", [])
+            )
+            test_cases[test_case_id] = TestCase(
+                resource_id=test_case_id,
+                name=test_case_data.get("name", ""),
+                scenario=test_case_data.get("scenario", ""),
+                variant=test_case_data.get("variantId", ""),
+                language=test_case_data.get("language", ""),
+                channel=test_case_data.get("channel", ""),
+                assertions=assertions,
+                tags=tags,
+            )
+        return test_cases
 
     @staticmethod
     def _read_translations_from_projection(

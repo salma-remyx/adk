@@ -33,6 +33,7 @@ from poly.resources import (
     SettingsRules,
     SMSTemplate,
     Topic,
+    TestCase,
     TranscriptCorrection,
     Translation,
     Variable,
@@ -344,6 +345,16 @@ class DiscoverLocalResourcesTest(unittest.TestCase):
         self.assertEqual(
             local_resources[AsrSettings],
             [os.path.join(TEST_DIR, speech_recognition_path, "asr_settings.yaml")],
+        )
+
+        # Find test cases
+        self.assertEqual(len(local_resources[TestCase]), 2)
+        self.assertCountEqual(
+            local_resources[TestCase],
+            [
+                os.path.join(TEST_DIR, "test_suite", "greeting_flow_test.yaml"),
+                os.path.join(TEST_DIR, "test_suite", "webchat_smoke_test.yaml"),
+            ]
         )
 
         # Find Translations
