@@ -1,6 +1,98 @@
 # CHANGELOG
 
 
+## v0.25.5 (2026-06-12)
+
+### Bug Fixes
+
+- Preserve unicode characters in JSON output ([#182](https://github.com/polyai/adk/pull/182),
+  [`1b2c099`](https://github.com/polyai/adk/commit/1b2c0998706a89fb79d82d21bc45cc62dcd8f133))
+
+## Summary
+
+Prevents `json.dumps` from escaping Unicode characters (e.g. `'` → `’`) in experimental config and
+  formatted JSON output.
+
+## Motivation
+
+When pulling agent configs containing Unicode characters like smart quotes (`'`), the JSON
+  serializer escapes them to `\uXXXX` sequences. This makes config files harder to read and creates
+  noisy diffs.
+
+## Changes
+
+- Set `ensure_ascii=False` in `ExperimentalConfig.raw` property - Set `ensure_ascii=False` in
+  `format_json()` utility
+
+## Test strategy
+
+- [ ] Added/updated unit tests - [x] Manual CLI testing (`poly <command>`) - [ ] Tested against a
+  live Agent Studio project - [x] N/A (docs, config, or trivial change)
+
+## Checklist
+
+- [x] `ruff check .` and `ruff format --check .` pass - [x] `pytest` passes - [x] No breaking
+  changes to the `poly` CLI interface (or migration path documented) - [x] Commit messages follow
+  [conventional commits](https://www.conventionalcommits.org/)
+
+## Screenshots / Logs
+
+```diff - "step_footer": "If the user asks a follow-up question while you are waiting for an answer,
+  answer the user’s question first..." + "step_footer": "If the user asks a follow-up question while
+  you are waiting for an answer, answer the user's question first..." ```
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+### Chores
+
+- Add sync script and update runtime type stubs ([#184](https://github.com/polyai/adk/pull/184),
+  [`4a195ff`](https://github.com/polyai/adk/commit/4a195ff2902c761dd1def8182e3081ad4f7e4d62))
+
+## Summary
+
+Add a script to auto-generate type stubs from `genai_lambda_runtime/python/runtime` and update all
+  stubs to match current source.
+
+## Motivation
+
+The type stubs in `src/poly/types/` were manually maintained and had drifted from the runtime
+  source. These stubs are copied into `_gen/` during `poly pull` to provide IDE autocomplete in
+  Agent Studio. This adds an automated sync script so stubs can be regenerated with a single
+  command.
+
+## Changes
+
+- Add `scripts/sync_runtime_stubs.py` — extracts public API signatures from runtime source,
+  synthesizes `__init__` for dataclasses, prunes unused imports, derives `__all__` lists, and
+  handles `TYPE_CHECKING` imports - Update all 10 existing stubs to match current runtime source -
+  Add 5 new stubs: `agentic_dial.py`, `emails.py`, `entity_validator.py`,
+  `value_extraction_types.py`, `webchat.py` - New types: `WebchatInterface`, `ChatCallAction`,
+  `AgenticDial`, `Destinations`, `OutgoingEmail`, `EntityValidationResult`, entity config types -
+  New `Conversation` properties: `webchat`, `translations`, `provider_voice_id`, `integrations` -
+  New `Conversation` methods: `goto_csat_flow`, `set_csat_*`, `send_content_template` - Updated
+  `Utils.prompt_llm` model list with GPT-4.1/5 and Claude models
+
+Usage: `python scripts/sync_runtime_stubs.py --runtime-path
+  /path/to/genai_lambda_runtime/python/runtime`
+
+## Test strategy
+
+- [ ] Added/updated unit tests - [ ] Manual CLI testing (`poly <command>`) - [ ] Tested against a
+  live Agent Studio project - [x] N/A (docs, config, or trivial change)
+
+## Checklist
+
+- [x] `ruff check .` and `ruff format --check .` pass - [x] `pytest` passes - [x] No breaking
+  changes to the `poly` CLI interface (or migration path documented) - [x] Commit messages follow
+  [conventional commits](https://www.conventionalcommits.org/)
+
+---------
+
+Co-authored-by: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+
 ## v0.25.4 (2026-06-12)
 
 ### Bug Fixes
