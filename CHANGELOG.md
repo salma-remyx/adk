@@ -1,6 +1,46 @@
 # CHANGELOG
 
 
+## v0.25.6 (2026-06-12)
+
+### Bug Fixes
+
+- Use relative imports in type stubs and add integrations stubs
+  ([#187](https://github.com/polyai/adk/pull/187),
+  [`b365a46`](https://github.com/polyai/adk/commit/b365a46eac025e14ecc3e9fbdbca17bb30400cf5))
+
+## Summary
+
+Fix type stubs to use relative imports and add integrations stubs.
+
+## Motivation
+
+The stubs updated in #184 used absolute `runtime.` imports. When copied into `_gen/`, the rewriter
+  regex didn't catch all forms, causing import errors. Also missing stubs for the integrations
+  subpackage.
+
+## Changes
+
+- Replace `from runtime.X import` → `from .X import` in all stubs - Expand `import runtime.X as Y`
+  into direct name imports (`from .X import A, B`) - Add integrations stubs: `Integration` base
+  class, `Integrations` facade, `OpenTable`, `Tripleseat`
+
+## Test strategy
+
+- [ ] Added/updated unit tests - [ ] Manual CLI testing (`poly <command>`) - [ ] Tested against a
+  live Agent Studio project - [x] N/A (docs, config, or trivial change)
+
+## Checklist
+
+- [x] `ruff check .` and `ruff format --check .` pass - [x] `pytest` passes - [x] No breaking
+  changes to the `poly` CLI interface (or migration path documented) - [x] Commit messages follow
+  [conventional commits](https://www.conventionalcommits.org/)
+
+---------
+
+Co-authored-by: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+
 ## v0.25.5 (2026-06-12)
 
 ### Bug Fixes
