@@ -1,6 +1,45 @@
 # CHANGELOG
 
 
+## v0.25.7 (2026-06-12)
+
+### Bug Fixes
+
+- Recursively copy integrations stubs into _gen/ ([#188](https://github.com/polyai/adk/pull/188),
+  [`10bc608`](https://github.com/polyai/adk/commit/10bc608892406ccf94a23f8d544e7568c57cbef5))
+
+## Summary
+
+Fix `save_imports` to recursively copy subdirectories from `poly.types` into `_gen/`, so the
+  `integrations/` stubs are included.
+
+## Motivation
+
+`save_imports` only iterated top-level `.py` files via `pkg.iterdir()`, skipping the `integrations/`
+  subdirectory added in #187. This meant `conv.integrations` had no type hints in Agent Studio.
+
+## Changes
+
+- Add `_copy_types_tree` helper that recursively walks the types package and copies `.py` files
+  (including `__init__.py`) into `_gen/` - Replace the flat iteration in `save_imports` with
+  `_copy_types_tree`
+
+## Test strategy
+
+- [ ] Added/updated unit tests - [x] Manual CLI testing (`poly <command>`) - [ ] Tested against a
+  live Agent Studio project - [x] N/A (docs, config, or trivial change)
+
+## Checklist
+
+- [x] `ruff check .` and `ruff format --check .` pass - [x] `pytest` passes (682/682) - [x] No
+  breaking changes to the `poly` CLI interface (or migration path documented) - [x] Commit messages
+  follow [conventional commits](https://www.conventionalcommits.org/)
+
+---------
+
+Co-authored-by: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+
 ## v0.25.6 (2026-06-12)
 
 ### Bug Fixes
