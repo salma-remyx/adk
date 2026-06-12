@@ -1,6 +1,165 @@
 # CHANGELOG
 
 
+## v0.25.4 (2026-06-12)
+
+### Bug Fixes
+
+- Add global DTMF config to experimental_config schema
+  ([#185](https://github.com/polyai/adk/pull/185),
+  [`6f09c50`](https://github.com/polyai/adk/commit/6f09c50c60690be484726c5ac0620c857d3f14ac))
+
+## Summary
+
+- Adds `dtmf.global` section to `experimental_config_schema.yaml`, syncing with
+  [poly_core#42747](https://github.com/PolyAI-LDN/poly_core/pull/42747) - Global DTMF enables digit
+  collection on every turn; step-level DTMF takes precedence when enabled - New properties:
+  `is_enabled`, `max_digits`, `end_key`, `collect_while_agent_speaking`
+
+**Jira:** [FDX-3768](https://poly-ai.atlassian.net/browse/FDX-3768)
+
+## Test plan
+
+- [x] Existing `ExperimentalConfigTests` pass (schema validation + invalid config)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+- Correct GitHub Issues link in README ([#181](https://github.com/polyai/adk/pull/181),
+  [`ac93113`](https://github.com/polyai/adk/commit/ac93113d7c49e3711c3196b3cb00959b6b047d30))
+
+## Summary - The GitHub Issues link in README.md pointed to `PolyAI-LDN/adk` which is inaccessible
+  to public users - Updated to `PolyAI/adk` to match the actual public repository
+
+## Test plan - [x] Verify the new link resolves to the correct repo
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+
+- Update README to remove Early Access information ([#151](https://github.com/polyai/adk/pull/151),
+  [`d6c61a0`](https://github.com/polyai/adk/commit/d6c61a017943bcb70635126c33dfc539c153bd60))
+
+Removed Early Access section and prerequisites from README. as they both they we're in early access
+  and API key needs to be requested from PolyAI
+
+## Summary
+
+<!-- What does this PR do? Keep it to 1-3 sentences. -->
+
+## Motivation
+
+<!-- Why is this change needed? Link to an issue if applicable. -->
+
+Closes #<!-- issue number -->
+
+## Changes
+
+<!-- Bullet list of the key changes. Focus on *what* changed, not *how*. -->
+
+-
+
+## Test strategy
+
+<!-- How did you verify this works? Check all that apply. -->
+
+- [ ] Added/updated unit tests - [ ] Manual CLI testing (`poly <command>`) - [ ] Tested against a
+  live Agent Studio project - [ ] N/A (docs, config, or trivial change)
+
+## Checklist
+
+- [ ] `ruff check .` and `ruff format --check .` pass - [ ] `pytest` passes - [ ] No breaking
+  changes to the `poly` CLI interface (or migration path documented) - [ ] Commit messages follow
+  [conventional commits](https://www.conventionalcommits.org/)
+
+## Screenshots / Logs
+
+<!-- Optional: paste terminal output, screenshots, or before/after diffs if helpful. -->
+
+Co-authored-by: Aaron Forinton <89849359+AaronForinton@users.noreply.github.com>
+
+### Documentation
+
+- Fix(experimental-config): add payload ([#183](https://github.com/polyai/adk/pull/183),
+  [`8067d78`](https://github.com/polyai/adk/commit/8067d78eee7c3c497bf761cf967c7ca8bf922220))
+
+## Summary
+
+This is related to PR #171
+
+## Motivation
+
+<!-- Why is this change needed? Link to an issue if applicable. -->
+
+Closes #<!-- issue number -->
+
+## Changes
+
+<!-- Bullet list of the key changes. Focus on *what* changed, not *how*. -->
+
+-
+
+## Test strategy
+
+<!-- How did you verify this works? Check all that apply. -->
+
+- [ ] Added/updated unit tests - [ ] Manual CLI testing (`poly <command>`) - [ ] Tested against a
+  live Agent Studio project - [x] N/A (docs, config, or trivial change)
+
+## Checklist
+
+- [ ] `ruff check .` and `ruff format --check .` pass - [ ] `pytest` passes - [x] No breaking
+  changes to the `poly` CLI interface (or migration path documented) - [ ] Commit messages follow
+  [conventional commits](https://www.conventionalcommits.org/)
+
+## Screenshots / Logs
+
+<!-- Optional: paste terminal output, screenshots, or before/after diffs if helpful. -->
+
+Co-authored-by: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+
+- Test suite documentation ([#180](https://github.com/polyai/adk/pull/180),
+  [`2b2f03a`](https://github.com/polyai/adk/commit/2b2f03ace0c646b34a04fbe5eeac14bb7f1fc5b9))
+
+## Summary
+
+<!-- What does this PR do? Keep it to 1-3 sentences. -->
+
+## Motivation
+
+<!-- Why is this change needed? Link to an issue if applicable. -->
+
+Closes #<!-- issue number -->
+
+## Changes
+
+<!-- Bullet list of the key changes. Focus on *what* changed, not *how*. -->
+
+-
+
+## Test strategy
+
+<!-- How did you verify this works? Check all that apply. -->
+
+- [ ] Added/updated unit tests - [ ] Manual CLI testing (`poly <command>`) - [ ] Tested against a
+  live Agent Studio project - [ ] N/A (docs, config, or trivial change)
+
+## Checklist
+
+- [ ] `ruff check .` and `ruff format --check .` pass - [ ] `pytest` passes - [ ] No breaking
+  changes to the `poly` CLI interface (or migration path documented) - [ ] Commit messages follow
+  [conventional commits](https://www.conventionalcommits.org/)
+
+## Screenshots / Logs
+
+<!-- Optional: paste terminal output, screenshots, or before/after diffs if helpful. -->
+
+---------
+
+Co-authored-by: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+
+
 ## v0.25.3 (2026-06-09)
 
 ### Bug Fixes
