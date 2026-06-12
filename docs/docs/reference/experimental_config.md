@@ -138,7 +138,22 @@ Example:
 
 Configure DTMF behavior, including disabling speech recognition for DTMF-only steps.
 
-The `dtmf` object supports a `flow_overrides` map where each key is a flow name. Per-flow settings include:
+The `dtmf` object supports a `global` section and a `flow_overrides` map.
+
+#### `global`
+
+The `global` section applies DTMF collection settings to every turn. Step-level DTMF configuration takes precedence over global settings when enabled.
+
+| Field | Type | Description |
+|---|---|---|
+| `is_enabled` | boolean | Whether global DTMF collection is enabled. |
+| `max_digits` | integer | Maximum number of DTMF digits to collect. Minimum: `0`. |
+| `end_key` | string | Key that signals the end of DTMF input (e.g. `"#"`). |
+| `collect_while_agent_speaking` | boolean | Whether to collect DTMF digits while the agent is speaking. |
+
+#### `flow_overrides`
+
+The `flow_overrides` map overrides DTMF settings for specific flows. Each key is a flow name. Per-flow settings include:
 
 | Field | Type | Description |
 |---|---|---|
@@ -152,11 +167,17 @@ Per-step settings (nested under `steps`) include:
 | `disable_speech` | boolean | Whether to disable speech recognition for this step. Takes precedence over the flow-level setting. |
 | `first_digit_timeout` | integer | Timeout in seconds for the first DTMF digit input for this step. Minimum: `1`. |
 
-Example:
+Example using global DTMF with a flow-level override:
 
 ~~~json
 {
   "dtmf": {
+    "global": {
+      "is_enabled": true,
+      "max_digits": 1,
+      "end_key": "#",
+      "collect_while_agent_speaking": false
+    },
     "flow_overrides": {
       "Payment Flow": {
         "disable_speech": true,
