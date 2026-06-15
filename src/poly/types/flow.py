@@ -2,6 +2,7 @@
 # flake8: noqa
 # ruff: noqa
 # type: ignore
+from dataclasses import dataclass
 from .conversation import Conversation as Conversation
 from typing import Any
 

@@ -4,6 +4,7 @@
 # type: ignore
 from typing import Any
 from collections.abc import Iterator
+from dataclasses import dataclass, field
 
 
 @dataclass

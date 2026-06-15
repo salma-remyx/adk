@@ -3,6 +3,7 @@
 # ruff: noqa
 # type: ignore
 import abc
+from dataclasses import dataclass
 
 
 class Event(abc.ABC): ...

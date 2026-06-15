@@ -4,6 +4,7 @@
 # type: ignore
 import requests
 from . import external_events as external_events
+from dataclasses import dataclass, field
 from .agentic_dial import AgenticDialData
 from .attachment import Attachment as Attachment
 from .entity_validator import EntityValidationResult

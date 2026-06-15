@@ -2,6 +2,7 @@
 # flake8: noqa
 # ruff: noqa
 # type: ignore
+from dataclasses import dataclass
 from .value_extraction_types import EntityConfig as EntityConfig
 
 

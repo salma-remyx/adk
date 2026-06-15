@@ -47,8 +47,7 @@ _FROM_RUNTIME_RE = re.compile(r"^from runtime\.(\S+)", re.MULTILINE)
 _IMPORT_RUNTIME_RE = re.compile(r"^import runtime\.(\w+)", re.MULTILINE)
 # Imports that should be dropped entirely from stubs
 _DROP_IMPORT_RE = re.compile(
-    r"^(?:from (?:_typeshed|constants|utils\.api_connector|utils\.secret_vault)"
-    r"|from dataclasses import).*\n",
+    r"^from (?:_typeshed|constants|utils\.api_connector|utils\.secret_vault) .*\n",
     re.MULTILINE,
 )
 # _typeshed.Incomplete -> Any

@@ -2,6 +2,7 @@
 # flake8: noqa
 # ruff: noqa
 # type: ignore
+from dataclasses import dataclass
 
 
 @dataclass

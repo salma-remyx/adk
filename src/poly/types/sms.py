@@ -3,6 +3,7 @@
 # ruff: noqa
 # type: ignore
 from collections.abc import Callable as Callable
+from dataclasses import dataclass
 from requests import Response as Response
 from typing import Any, Protocol
 
