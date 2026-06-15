@@ -157,32 +157,46 @@ def _read_all_from_stub(source: str) -> list[str] | None:
     return None
 
 
-def _load_file_class_maps() -> dict[str, list[str]]:
+def _load_file_class_maps(
+    pkg: importlib.resources.abc.Traversable | None = None,
+    prefix: str = "",
+) -> dict[str, list[str]]:
     """Discover exported names by reading __all__ from each type file.
 
+    Recurses into subpackages so nested modules like
+    ``integrations/integrations.py`` are included.
+
     Returns:
-        A dictionary mapping filenames (e.g. "conversation.py") to the list of
-        names declared in that module's __all__.
+        A dictionary mapping dotted module paths (e.g.
+        ``"conversation"`` or ``"integrations.integrations"``)
+        to the list of names declared in that module's ``__all__``.
     """
+    if pkg is None:
+        pkg = importlib.resources.files(_TYPES_PACKAGE)
     result: dict[str, list[str]] = {}
-    pkg = importlib.resources.files(_TYPES_PACKAGE)
     for resource in sorted(pkg.iterdir(), key=lambda r: r.name):
         name = resource.name
+        if name == "__pycache__":
+            continue
+        if resource.is_dir():
+            sub_prefix = f"{prefix}{name}." if prefix else f"{name}."
+            result.update(_load_file_class_maps(resource, sub_prefix))
+            continue
         if not name.endswith(".py") or name.startswith("_"):
             continue
         names = _read_all_from_stub(resource.read_text(encoding="utf-8"))
         if names:
-            result[name] = names
+            module_name = name.replace(".py", "")
+            result[f"{prefix}{module_name}"] = names
     return result
 
 
 def _gen_import_statements() -> str:
     """Import statements for _gen/__init__.py using _gen.<module> absolute form."""
     imports = []
-    for file_path, names in _load_file_class_maps().items():
-        module_name = os.path.basename(file_path).replace(".py", "")
+    for dotted_module, names in _load_file_class_maps().items():
         imports.append(
-            f"""from _gen.{module_name} import (
+            f"""from _gen.{dotted_module} import (
     {", ".join(names)}
 )"""
         )
