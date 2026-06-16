@@ -12,33 +12,6 @@ A CLI and Python package for managing [Agent Studio](https://studio.us.poly.ai) 
 
 **[Documentation](https://polyai.github.io/adk/)**
 
-## Early Access
-
-⚠️ **The PolyAI ADK is currently in Early Access.**
-
-Changes may be pushed frequently while the platform evolves. If you encounter issues, please ensure you are running the **latest version** of the ADK before reporting them.
-
-[Request access to the PolyAI ADK](https://fehky.share-eu1.hsforms.com/2oSGLpUctRvyqXcb6K44DAQ)
-
-Once approved, the PolyAI team will provide the credentials required to use the ADK.
-
-## Prerequisites
-
-Before using the ADK you must:
-
-- have access to a **PolyAI Agent Studio workspace**
-- obtain an **ADK API key** from the PolyAI team
-
-Access to both is granted through the Early Access Program.
-
-Store your API key as an environment variable named: `POLY_ADK_KEY`
-
-For example:
-
-```bash
-export POLY_ADK_KEY=<your-key>
-```
-
 ## Installation
 
 ```bash
@@ -243,7 +216,7 @@ poly docs --output doc_file.md
 
 ## Bugs & Feature Requests
 
-Please report bugs or request features via the [GitHub Issues](https://github.com/PolyAI-LDN/adk/issues) page.
+Please report bugs or request features via the [GitHub Issues](https://github.com/PolyAI/adk/issues) page.
 
 ## Contributing
 
