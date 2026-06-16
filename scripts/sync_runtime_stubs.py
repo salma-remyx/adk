@@ -119,21 +119,6 @@ def _load_imports_json(python_root: Path) -> dict[str, list[str]]:
     return result
 
 
-def _source_files_from_imports_json(python_root: Path) -> list[Path]:
-    """Return the list of source files referenced in imports.json."""
-    imports_file = python_root / "assets" / "imports.json"
-    if not imports_file.exists():
-        return []
-    with open(imports_file, encoding="utf-8") as f:
-        raw = json.load(f)
-    files = []
-    for key in raw:
-        source = python_root / key
-        if source.exists():
-            files.append(source)
-    return files
-
-
 def _ensure_any_imported(source: str) -> str:
     """Add ``Any`` to the typing import if not already present."""
     if "from typing import" in source:
@@ -202,18 +187,29 @@ def main() -> None:
         print(f"Error: python root not found: {python_root}", file=sys.stderr)
         sys.exit(1)
 
-    # imports.json drives which files to stub and their __all__
+    # imports.json drives __all__ generation (not which files to stub)
     imports_map = _load_imports_json(python_root)
-    source_files = _source_files_from_imports_json(python_root)
-    if not source_files:
-        print("Error: no source files found via imports.json", file=sys.stderr)
+
+    # Stub all of runtime/ plus individual utils files from imports.json
+    runtime_dir = python_root / "runtime"
+    if not runtime_dir.is_dir():
+        print(f"Error: runtime directory not found: {runtime_dir}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Found {len(source_files)} source files in imports.json")
+    sources: list[str] = [str(runtime_dir)]
+    # Add individual utils/ files referenced in imports.json
+    imports_file = python_root / "assets" / "imports.json"
+    if imports_file.exists():
+        with open(imports_file, encoding="utf-8") as f:
+            for key in json.load(f):
+                if key.startswith("utils/"):
+                    source_file = python_root / key
+                    if source_file.exists():
+                        sources.append(str(source_file))
 
-    # Run stubgen on all source files at once
+    # Run stubgen
     with tempfile.TemporaryDirectory() as tmpdir:
-        cmd = ["uv", "run", "stubgen", "-o", tmpdir] + [str(f) for f in source_files]
+        cmd = ["uv", "run", "stubgen", "-o", tmpdir] + sources
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
             print(f"stubgen failed:\n{result.stderr}", file=sys.stderr)

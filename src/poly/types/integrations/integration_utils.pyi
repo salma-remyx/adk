@@ -1,15 +1,14 @@
 # Copyright PolyAI Limited
-# flake8: noqa
-# ruff: noqa
-# type: ignore
 from typing import Any
 import requests
 
 VALID_HTTP_METHODS: Any
-PROXY_BASE_URL: str
+US_PROXY_BASE_URL: str
+EU_PROXY_BASE_URL: str
 DEFAULT_REQUEST_TIMEOUT_SECONDS: int
 
 def proxy_integration_request_to_paragon(
+    paragon_proxy_url: str,
     paragon_connection_id: str,
     paragon_project_id: str,
     integration_token: str,

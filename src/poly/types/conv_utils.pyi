@@ -6,6 +6,8 @@ from .history import AgentResponse as AgentResponse, UserInput as UserInput
 from .value_extraction import Address as Address, _EntityValidationResponse
 from typing import Any, Literal
 
+class PromptLLMCallLimitError(Exception): ...
+
 class Utils:
     def __init__(
         self,

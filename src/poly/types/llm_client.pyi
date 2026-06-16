@@ -1,7 +1,4 @@
 # Copyright PolyAI Limited
-# flake8: noqa
-# ruff: noqa
-# type: ignore
 from dataclasses import dataclass
 from typing import Literal
 

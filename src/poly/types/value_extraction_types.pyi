@@ -1,7 +1,4 @@
 # Copyright PolyAI Limited
-# flake8: noqa
-# ruff: noqa
-# type: ignore
 import re
 from datetime import date, time
 from enum import StrEnum
@@ -36,7 +33,6 @@ class NonNegativeMaxRangeConfig(BaseRangeConfig):
 class NumericConfig(BaseRangeConfig):
     entity_type: Literal["numeric"]
     numeric_type: NumericType
-
     def validate_min_max(cls, v, values): ...
 
 class QuantityConfig(NonNegativeMaxRangeConfig):
@@ -61,7 +57,6 @@ class AlphanumericConfig(BaseModel):
     custom_regex: str
     entity_type: Literal["alphanumeric"]
     capturing_group: int | None
-
     def validate_regex(cls, v): ...
     def validate_capturing_group(cls, v): ...
     def get_compiled_regex(self) -> re.Pattern: ...
@@ -71,7 +66,6 @@ class DateConfig(BaseModel):
     day_first: bool | None
     earliest_date_inclusive: date | None
     latest_date_inclusive: date | None
-
     def parse_dates(cls, v, values): ...
     def validate_dates(cls, v, values): ...
 
@@ -86,7 +80,6 @@ class TimeConfig(BaseModel):
     earliest_time_inclusive: time | None
     latest_time_inclusive: time | None
     time_pivot: int
-
     def parse_times(cls, v, values): ...
     def validate_times(cls, v, values): ...
     def validate_time_pivot(cls, v, values): ...
@@ -94,13 +87,11 @@ class TimeConfig(BaseModel):
 class PhoneNumberConfig(BaseModel):
     entity_type: Literal["phone_number"]
     regions: set[str] | None
-
     def validate_regions(cls, v): ...
 
 class EnumConfig(BaseModel):
     entity_type: Literal["enum"]
     allowed_vals: set[str] | None
-
     def validate_allowed_vals(cls, v): ...
 
 EntityConfig = (
