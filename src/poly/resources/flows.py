@@ -1491,7 +1491,7 @@ class FunctionStep(Function, BaseFlowStep):
         condition_name_map = {
             cond.name: cond
             for cond in known_conditions
-            if cond.command_type != ConditionType.EXIT_FLOW
+            if cond.condition_type != ConditionType.EXIT_FLOW
         }
         conditions = []
 
