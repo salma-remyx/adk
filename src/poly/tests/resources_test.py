@@ -84,6 +84,13 @@ from poly.resources.topic import (
     Topic,
 )
 from poly.resources.transcript_correction import RegularExpressionRule, TranscriptCorrection
+from poly.resources.messaging_integration import (
+    API_TYPE_TO_LOCAL_NAME,
+    INTEGRATION_TYPES,
+    LOCAL_NAME_TO_API_TYPE,
+    api_response_to_yaml,
+    yaml_to_api_payload,
+)
 from poly.resources.translations import Translation
 from poly.resources.variable import Variable
 from poly.resources.variant_attributes import Variant, VariantAttribute
@@ -8108,6 +8115,228 @@ class CheckYamlFieldTypesTest(unittest.TestCase):
             variant=None,
         )
         resource_utils.check_yaml_field_types(test_case)
+
+
+class MessagingIntegrationTests(unittest.TestCase):
+    """Tests for messaging_integration transform functions."""
+
+    SAMPLE_API_RESPONSE = {
+        "_assignments": {
+            "VARIANT-AC274AAB": "breakers",
+            "VARIANT-FC763DBD": "bayview",
+            "__default__": "breakers",
+        },
+        "_credential_sets": {
+            "bayview": {
+                "live": {
+                    "environment": "NA1",
+                    "ws_brand_id": "5724",
+                    "ws_channel_id": "chat_abc ",
+                },
+                "pre-release": {
+                    "environment": "NA1",
+                    "ws_brand_id": "5724",
+                    "ws_channel_id": "chat_abc ",
+                },
+                "sandbox": {
+                    "environment": "NA1",
+                    "ws_brand_id": "5724",
+                    "ws_channel_id": "chat_abc ",
+                },
+            },
+            "breakers": {
+                "live": {
+                    "environment": "NA1",
+                    "ws_brand_id": "5724",
+                    "ws_channel_id": "chat_def",
+                },
+                "pre-release": {
+                    "environment": "NA1",
+                    "ws_brand_id": "5724",
+                    "ws_channel_id": "chat_def",
+                },
+                "sandbox": {
+                    "environment": "NA1",
+                    "ws_brand_id": "5724",
+                    "ws_channel_id": "chat_def",
+                },
+            },
+        },
+        "_version": 2,
+    }
+
+    VARIANT_ID_TO_NAME = {
+        "VARIANT-AC274AAB": "breakers-variant",
+        "VARIANT-FC763DBD": "bayview-variant",
+    }
+
+    VARIANT_NAME_TO_ID = {v: k for k, v in VARIANT_ID_TO_NAME.items()}
+
+    # -- INTEGRATION_TYPES mappings --
+
+    def test_integration_types_api_type_round_trip(self):
+        """API_TYPE_TO_LOCAL_NAME and LOCAL_NAME_TO_API_TYPE are consistent inverses."""
+        for local_name, info in INTEGRATION_TYPES.items():
+            api_type = info["api_type"]
+            self.assertEqual(API_TYPE_TO_LOCAL_NAME[api_type], local_name)
+            self.assertEqual(LOCAL_NAME_TO_API_TYPE[local_name], api_type)
+
+    def test_api_type_to_local_name_has_all_entries(self):
+        """API_TYPE_TO_LOCAL_NAME has one entry per INTEGRATION_TYPES entry."""
+        self.assertEqual(len(API_TYPE_TO_LOCAL_NAME), len(INTEGRATION_TYPES))
+
+    # -- api_response_to_yaml --
+
+    def test_api_response_to_yaml_resolves_variant_ids_to_names(self):
+        """Variant IDs in assignments are resolved to human-readable names."""
+        yaml_str = api_response_to_yaml(self.SAMPLE_API_RESPONSE, self.VARIANT_ID_TO_NAME)
+        data = yaml.safe_load(yaml_str)
+        variant_names = {v["name"] for v in data["variants"]}
+        self.assertEqual(variant_names, {"breakers-variant", "bayview-variant"})
+
+    def test_api_response_to_yaml_flattens_credential_sets(self):
+        """Per-env credentials are collapsed to a single flat dict per credential set."""
+        yaml_str = api_response_to_yaml(self.SAMPLE_API_RESPONSE, self.VARIANT_ID_TO_NAME)
+        data = yaml.safe_load(yaml_str)
+        # Credential sets should be flat dicts, not nested by env
+        for cred_name, cred_values in data["credential_sets"].items():
+            self.assertIsInstance(cred_values, dict)
+            for key, val in cred_values.items():
+                self.assertNotIn(key, ("sandbox", "pre-release", "live"))
+
+    def test_api_response_to_yaml_strips_whitespace_from_credentials(self):
+        """Trailing whitespace on credential values is stripped."""
+        yaml_str = api_response_to_yaml(self.SAMPLE_API_RESPONSE, self.VARIANT_ID_TO_NAME)
+        data = yaml.safe_load(yaml_str)
+        # The bayview credential set had trailing space on ws_channel_id
+        bayview_creds = data["credential_sets"]["bayview"]
+        self.assertEqual(bayview_creds["ws_channel_id"], "chat_abc")
+
+    def test_api_response_to_yaml_sets_is_default(self):
+        """The variant whose credential_set matches __default__ gets is_default: true."""
+        yaml_str = api_response_to_yaml(self.SAMPLE_API_RESPONSE, self.VARIANT_ID_TO_NAME)
+        data = yaml.safe_load(yaml_str)
+        defaults = [v for v in data["variants"] if v.get("is_default")]
+        self.assertEqual(len(defaults), 1)
+        self.assertEqual(defaults[0]["credential_set"], "breakers")
+
+    def test_api_response_to_yaml_unmapped_variant_id_passes_through(self):
+        """Variant IDs not in the mapping are used as-is."""
+        yaml_str = api_response_to_yaml(self.SAMPLE_API_RESPONSE, {})
+        data = yaml.safe_load(yaml_str)
+        variant_names = {v["name"] for v in data["variants"]}
+        self.assertIn("VARIANT-AC274AAB", variant_names)
+        self.assertIn("VARIANT-FC763DBD", variant_names)
+
+    def test_api_response_to_yaml_empty_assignments(self):
+        """An API response with no assignments produces empty variants list."""
+        api = {"_assignments": {"__default__": "x"}, "_credential_sets": {}}
+        yaml_str = api_response_to_yaml(api, {})
+        data = yaml.safe_load(yaml_str)
+        self.assertEqual(data["variants"], [])
+
+    # -- yaml_to_api_payload --
+
+    def test_yaml_to_api_payload_expands_to_three_envs(self):
+        """Flat credentials are expanded to sandbox, pre-release, and live."""
+        yaml_str = api_response_to_yaml(self.SAMPLE_API_RESPONSE, self.VARIANT_ID_TO_NAME)
+        payload = yaml_to_api_payload(yaml_str, self.VARIANT_NAME_TO_ID)
+        for cred_name, envs in payload["_credential_sets"].items():
+            self.assertEqual(set(envs.keys()), {"sandbox", "pre-release", "live"})
+
+    def test_yaml_to_api_payload_resolves_names_to_ids(self):
+        """Variant names in YAML are resolved back to IDs in the payload."""
+        yaml_str = api_response_to_yaml(self.SAMPLE_API_RESPONSE, self.VARIANT_ID_TO_NAME)
+        payload = yaml_to_api_payload(yaml_str, self.VARIANT_NAME_TO_ID)
+        assignment_keys = set(payload["_assignments"].keys())
+        self.assertIn("VARIANT-AC274AAB", assignment_keys)
+        self.assertIn("VARIANT-FC763DBD", assignment_keys)
+
+    def test_yaml_to_api_payload_sets_default_from_is_default(self):
+        """The __default__ assignment is set from the variant with is_default: true."""
+        yaml_str = api_response_to_yaml(self.SAMPLE_API_RESPONSE, self.VARIANT_ID_TO_NAME)
+        payload = yaml_to_api_payload(yaml_str, self.VARIANT_NAME_TO_ID)
+        self.assertEqual(payload["_assignments"]["__default__"], "breakers")
+
+    def test_yaml_to_api_payload_unmapped_name_passes_through(self):
+        """Variant names not in the mapping are used as-is for the ID."""
+        yaml_content = yaml.dump(
+            {
+                "variants": [
+                    {"name": "unknown-variant", "credential_set": "creds", "is_default": True},
+                ],
+                "credential_sets": {"creds": {"key": "value"}},
+            }
+        )
+        payload = yaml_to_api_payload(yaml_content, {})
+        self.assertIn("unknown-variant", payload["_assignments"])
+
+    def test_yaml_to_api_payload_version_is_2(self):
+        """The payload always includes _version: 2."""
+        yaml_str = api_response_to_yaml(self.SAMPLE_API_RESPONSE, self.VARIANT_ID_TO_NAME)
+        payload = yaml_to_api_payload(yaml_str, self.VARIANT_NAME_TO_ID)
+        self.assertEqual(payload["_version"], 2)
+
+    # -- Error cases --
+
+    def test_yaml_to_api_payload_empty_yaml_raises(self):
+        """Empty YAML content raises ValueError."""
+        with self.assertRaises(ValueError) as cm:
+            yaml_to_api_payload("", {})
+        self.assertIn("empty", str(cm.exception).lower())
+
+    def test_yaml_to_api_payload_no_is_default_raises(self):
+        """YAML with no is_default variant raises ValueError."""
+        yaml_content = yaml.dump(
+            {
+                "variants": [
+                    {"name": "v1", "credential_set": "creds"},
+                ],
+                "credential_sets": {"creds": {"key": "value"}},
+            }
+        )
+        with self.assertRaises(ValueError) as cm:
+            yaml_to_api_payload(yaml_content, {})
+        self.assertIn("is_default", str(cm.exception))
+
+    def test_yaml_to_api_payload_unknown_credential_set_raises(self):
+        """Variant referencing a non-existent credential set raises ValueError."""
+        yaml_content = yaml.dump(
+            {
+                "variants": [
+                    {"name": "v1", "credential_set": "nonexistent", "is_default": True},
+                ],
+                "credential_sets": {"real_creds": {"key": "value"}},
+            }
+        )
+        with self.assertRaises(ValueError) as cm:
+            yaml_to_api_payload(yaml_content, {})
+        self.assertIn("nonexistent", str(cm.exception))
+
+    # -- Roundtrip --
+
+    def test_roundtrip_api_to_yaml_to_api(self):
+        """API response -> YAML -> API payload reproduces the original structure."""
+        yaml_str = api_response_to_yaml(self.SAMPLE_API_RESPONSE, self.VARIANT_ID_TO_NAME)
+        payload = yaml_to_api_payload(yaml_str, self.VARIANT_NAME_TO_ID)
+
+        # Assignments should match (values are credential set names, keys are variant IDs)
+        original_assignments = dict(self.SAMPLE_API_RESPONSE["_assignments"])
+        self.assertEqual(payload["_assignments"], original_assignments)
+
+        # Credential sets: the roundtrip should produce identical expanded creds
+        # (stripped whitespace is the only expected difference)
+        for cred_name in self.SAMPLE_API_RESPONSE["_credential_sets"]:
+            for env in ("sandbox", "pre-release", "live"):
+                original = self.SAMPLE_API_RESPONSE["_credential_sets"][cred_name][env]
+                result = payload["_credential_sets"][cred_name][env]
+                for key in original:
+                    expected = (
+                        original[key].strip() if isinstance(original[key], str) else original[key]
+                    )
+                    self.assertEqual(result[key], expected)
+
+        self.assertEqual(payload["_version"], 2)
 
 
 if __name__ == "__main__":
