@@ -1,6 +1,82 @@
 # CHANGELOG
 
 
+## v0.26.0 (2026-06-19)
+
+### Documentation
+
+- Fix: Bump experimental config schema ([#198](https://github.com/polyai/adk/pull/198),
+  [`eb716c8`](https://github.com/polyai/adk/commit/eb716c8a7e976e6575c94092ee2920ec71da6b3c))
+
+## Summary
+
+<!-- What does this PR do? Keep it to 1-3 sentences. -->
+
+## Motivation
+
+<!-- Why is this change needed? Link to an issue if applicable. -->
+
+Closes #<!-- issue number -->
+
+## Changes
+
+<!-- Bullet list of the key changes. Focus on *what* changed, not *how*. -->
+
+-
+
+## Test strategy
+
+<!-- How did you verify this works? Check all that apply. -->
+
+- [ ] Added/updated unit tests - [ ] Manual CLI testing (`poly <command>`) - [ ] Tested against a
+  live Agent Studio project - [x] N/A (docs, config, or trivial change)
+
+## Checklist
+
+- [ ] `ruff check .` and `ruff format --check .` pass - [ ] `pytest` passes - [x] No breaking
+  changes to the `poly` CLI interface (or migration path documented) - [ ] Commit messages follow
+  [conventional commits](https://www.conventionalcommits.org/)
+
+## Screenshots / Logs
+
+<!-- Optional: paste terminal output, screenshots, or before/after diffs if helpful. -->
+
+Co-authored-by: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+
+### Features
+
+- Send X-Poly-Source header on all API requests ([#196](https://github.com/polyai/adk/pull/196),
+  [`e48e963`](https://github.com/polyai/adk/commit/e48e9639bfeb51c5bfa9383834a93fe1e346ba63))
+
+## Summary
+
+Adds the `X-Poly-Source: adk` header to all outbound API requests so the platform can identify
+  traffic originating from the ADK CLI.
+
+## Motivation
+
+Enables the platform team to distinguish ADK-originated requests from other API consumers for
+  analytics, debugging, and rate-limiting purposes.
+
+## Changes
+
+- Added `X-Poly-Source: adk` header to `PlatformAPIHandler.make_request` (API-key auth path) - Added
+  `X-Poly-Source: adk` header to JWT-authenticated endpoints (`push_resource`, `push_function`,
+  `publish_agent`) - Added `X-Poly-Source: adk` header to `get_conversation_logs` - Added
+  `X-Poly-Source: adk` header to `SourcererSDK` request headers
+
+## Test strategy
+
+- [ ] Added/updated unit tests - [ ] Manual CLI testing (`poly <command>`) - [x] Tested against a
+  live Agent Studio project - [ ] N/A (docs, config, or trivial change)
+
+## Checklist
+
+- [x] `ruff check .` and `ruff format --check .` pass - [x] `pytest` passes - [x] No breaking
+  changes to the `poly` CLI interface (or migration path documented) - [x] Commit messages follow
+  [conventional commits](https://www.conventionalcommits.org/)
+
+
 ## v0.25.11 (2026-06-19)
 
 ### Bug Fixes
