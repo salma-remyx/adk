@@ -1,6 +1,50 @@
 # CHANGELOG
 
 
+## v0.27.0 (2026-06-22)
+
+### Features
+
+- Add Project management commands (list, duplicate, delete)
+  ([#172](https://github.com/polyai/adk/pull/172),
+  [`6974701`](https://github.com/polyai/adk/commit/6974701bab35fedd39c1b26e24a4e12966f983f2))
+
+## Summary
+
+Add `poly project list`, `poly project delete`, and `poly project duplicate` commands using the
+  public Agents API endpoints.
+
+## Motivation
+
+The ADK only supported `poly project create`. Users had no way to list, delete, or duplicate
+  projects from the CLI.
+
+## Changes
+
+- Add `list_agents`, `get_agents`, `delete_project`, `duplicate_project` to `PlatformAPIHandler` and
+  `AgentStudioInterface`, hitting the public `/v1/agents/` endpoints - Handle HTTP 204 No Content in
+  `make_request` (required by the DELETE endpoint) - Add `poly project list` — displays agents in a
+  table with ID, name, last updated, and branch count - Add `poly project delete` — with `--force`
+  flag and interactive confirmation (`auto_enter=False`) - Add `poly project duplicate` — prompts
+  for new name and optional ID - All three commands support `--json` mode and interactive
+  region/account/agent selection - Use the public `list-agents` endpoint for agent selection so that
+  slug-form `agentId` values are passed to the public API (the internal `/adk/v1/` endpoint returns
+  `PROJECT-xxx` IDs which the public endpoints don't accept) - Add `print_agents` table helper in
+  `console.py` - Add 10 tests across `DeleteProjectTest` and `DuplicateProjectTest`
+
+## Test strategy
+
+- [x] Added/updated unit tests - [x] Manual CLI testing (`poly project list`, `poly project delete`,
+  `poly project duplicate`) - [x] Tested against a live Agent Studio project - [ ] N/A (docs,
+  config, or trivial change)
+
+## Checklist
+
+- [x] `ruff check .` and `ruff format --check .` pass - [x] `pytest` passes (672 tests) - [x] No
+  breaking changes to the `poly` CLI interface (or migration path documented) - [x] Commit messages
+  follow [conventional commits](https://www.conventionalcommits.org/)
+
+
 ## v0.26.0 (2026-06-19)
 
 ### Documentation
