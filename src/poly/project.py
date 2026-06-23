@@ -1753,17 +1753,17 @@ class AgentStudioProject:
 
         return files_with_conflicts, modified_files, new_files, deleted_files
 
-    def revert_changes(self, files: list[str] = None) -> list[str]:
+    def revert_changes(self, file_paths: list[str] = None) -> list[str]:
         """Revert changes in the project.
 
         Args:
-            files (list[str]): List of specific files to revert. If None, revert all changes.
+            file_paths (list[str]): List of specific files to revert. If None, revert all changes.
         """
         reverted_files = []
         resource_mappings = self._make_resource_mappings(self.resources)
-        all_files = not files
+        all_files = not file_paths
         for resource in self.all_resources:
-            if not all_files and resource.get_path(self.root_path) not in files:
+            if not all_files and resource.get_path(self.root_path) not in file_paths:
                 continue
 
             resource.save(self.root_path, resource_mappings=resource_mappings)
@@ -1771,24 +1771,24 @@ class AgentStudioProject:
 
         return reverted_files
 
-    def get_diffs(self, all_files: bool = False, files: list[str] = None) -> dict[str, str]:
+    def get_diffs(self, file_paths: list[str] = None) -> dict[str, str]:
         """Get the diffs of all resources in the project.
 
         Args:
-            all_files (bool): If True, get diffs for all files.
-            files (list[str]): List of specific files to get diffs for.
+            file_paths (list[str]): List of specific files to get diffs for. If None, diff all.
 
         Returns:
             dict[str, str]: A dictionary mapping resource file names to their diffs.
         """
         diffs = {}
+        all_files = not file_paths
         new_resources_mappings, kept_resources_mappings, deleted_resources_mappings = (
             self.find_new_kept_deleted(self.discover_local_resources())
         )
         local_resources_mappings = new_resources_mappings + kept_resources_mappings
 
         for local_resource_mapping in kept_resources_mappings:
-            if not all_files and files and local_resource_mapping.file_path not in files:
+            if not all_files and file_paths and local_resource_mapping.file_path not in file_paths:
                 continue
 
             original_hash = self.file_structure_info.get(
@@ -1840,7 +1840,7 @@ class AgentStudioProject:
             )
 
         for resource_mapping in deleted_resources_mappings:
-            if not all_files and files and resource_mapping.file_path not in files:
+            if not all_files and file_paths and resource_mapping.file_path not in file_paths:
                 continue
 
             original_resource = self.resources.get(resource_mapping.resource_type, {}).get(
@@ -2365,7 +2365,7 @@ class AgentStudioProject:
             bool: True if the switch was successful, False otherwise
             dict[str, Any]: The projection data
         """
-        if self.get_diffs(all_files=True) and not force:
+        if self.get_diffs() and not force:
             raise ValueError(
                 "Cannot switch branches with uncommitted changes. Use --force to switch and discard changes."
             )
@@ -2773,7 +2773,7 @@ class AgentStudioProject:
         if self.branch_id == "main":
             raise ValueError("Merging from 'main' branch is not supported.")
 
-        if diffs := self.get_diffs(all_files=True):
+        if diffs := self.get_diffs():
             raise ValueError(
                 f"Cannot merge branch with uncommitted changes, diffs: {list(diffs.keys())}"
             )
@@ -2826,7 +2826,7 @@ class AgentStudioProject:
         if self.branch_id == "main":
             raise ValueError("Cannot sync ids while on main branch.")
 
-        if self.get_diffs(all_files=True):
+        if self.get_diffs():
             raise ValueError("Cannot sync ids due to uncommitted changes.")
 
         sandbox_resources = self.get_remote_resources_by_name("main")
@@ -2994,7 +2994,7 @@ class AgentStudioProject:
                     matched.append(test)
         elif files:
             for test in tests.values():
-                if test.resource_id in files:
+                if test.file_path in files:
                     matched.append(test)
 
         if not matched:

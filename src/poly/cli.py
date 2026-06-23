@@ -2762,7 +2762,7 @@ class AgentStudioCLI:
         # If relative paths are provided, convert them to absolute paths
         files = [os.path.abspath(os.path.join(os.getcwd(), file)) for file in files or []]
 
-        files_reverted = project.revert_changes(files=files)
+        files_reverted = project.revert_changes(file_paths=files)
         if output_json:
             json_print(
                 {
@@ -2795,7 +2795,7 @@ class AgentStudioCLI:
         project = cls._load_project(base_path, output_json=output_json)
         files = [os.path.abspath(os.path.join(os.getcwd(), file)) for file in files or []]
         if not (before or after):
-            return project.get_diffs(all_files=not files, files=files)
+            return project.get_diffs(file_paths=files)
 
         if not before:
             client_env = "sandbox"
@@ -3140,7 +3140,7 @@ class AgentStudioCLI:
 
         if env in ["pre-release", "live"]:
             # Checks for any local changes on main before creating env branch.
-            if diffs := project.get_diffs(all_files=True):
+            if diffs := project.get_diffs():
                 if not force:
                     raise ValueError(
                         f"Uncommitted changes on main branch, diffs: {list(diffs.keys())}"
