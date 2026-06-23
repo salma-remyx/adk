@@ -260,6 +260,27 @@ poly revert file1.yaml file2.yaml
 
 `poly revert` with no arguments reverts every change in the working tree; pass file paths to revert only those files.
 
+### `poly studio`
+
+Open the current project in the Agent Studio web application using the default browser.
+
+The URL is constructed from the project's region, account ID, and project ID, taking you directly to the correct workspace and project.
+
+Examples:
+
+~~~bash
+poly studio
+poly studio --path /path/to/project
+poly studio --json
+~~~
+
+| Flag | Description |
+|---|---|
+| `--path` | Base path to the project. Defaults to the current working directory. |
+| `--json` | Print a JSON object containing the URL instead of opening the browser. |
+
+When `--json` is used, the command prints `{"url": "https://..."}` and does not open the browser.
+
 ### `poly branch`
 
 Manage project branches.
@@ -672,6 +693,7 @@ poly init --region us-1 --account_id 123 --project_id my_project --json
 poly project create --region us-1 --account_id my-account --name my-project --json
 poly chat --json -m 'Hello'
 poly chat --json --input-file ./script.txt
+poly studio --json
 poly deployments show abc123def --json
 poly deployments list --json
 poly deployments promote --from <id> --to pre-release --force --json
@@ -717,6 +739,7 @@ The exact fields vary by command. Common fields include:
 | `poly init --json` | `success`, `root_path` |
 | `poly project create --json` | `success`, `root_path` (via init); on error: `success`, `error` |
 | `poly chat --json` | `conversations` (array); optional `push` (when `--push` is used) |
+| `poly studio --json` | `url` |
 | `poly deployments show --json` | `success`, `deployment`, `active_deployment_hashes`, `included_deployments`, `is_rollback` |
 | `poly deployments promote --json` | `success`, `from_hash`, `to_env`, `message`, `included_deployments`; `dry_run` when `--dry-run` is used |
 | `poly deployments rollback --json` | `success`, `target_hash`, `message`, `reverted_deployments`; `dry_run` when `--dry-run` is used |
@@ -768,6 +791,25 @@ When `--json` is used with `poly chat`, the command emits a single JSON object w
 - `turns[0]` is always the agent greeting, with `"input": null`.
 - If `--push` is also supplied, the output includes a `push` key: `{ "push": { "success": true, "message": "..." } }`.
 - If `--functions`, `--flows`, or `--state` are also set, the relevant metadata fields are included in each turn.
+
+#### `poly studio --json` output shape
+
+When `--json` is used with `poly studio`, the command prints the Agent Studio URL without opening the browser:
+
+~~~json
+{
+  "url": "https://studio.us.poly.ai/my-account/my-project"
+}
+~~~
+
+The URL format varies by region:
+
+| Region | URL pattern |
+|---|---|
+| `us-1` | `https://studio.us.poly.ai/<account_id>/<project_id>` |
+| `euw-1` | `https://studio.eu.poly.ai/<account_id>/<project_id>` |
+| `uk-1` | `https://studio.uk.poly.ai/<account_id>/<project_id>` |
+| `studio` | `https://studio.poly.ai/<account_id>/<project_id>` |
 
 #### `poly conversations get-audio --json` output shape
 
@@ -855,6 +897,10 @@ A typical CLI workflow looks like this:
 10. browse and debug conversations with `poly conversations list` and `poly conversations get`
 11. merge the branch with `poly branch merge '<message>'`
 12. promote to pre-release or live with `poly deployments promote`
+
+!!! tip "Open the project in Agent Studio from the CLI"
+
+    Run `poly studio` at any point to jump straight to the current project in Agent Studio in your browser.
 
 !!! info "Run commands from the project folder"
 
