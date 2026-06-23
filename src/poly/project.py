@@ -3020,3 +3020,14 @@ class AgentStudioProject:
             test_ids,
             self.branch_id,
         )
+
+    def get_test_run(self, test_run_id: str) -> dict:
+        """Get a test run by ID, including individual test results.
+
+        Args:
+            test_run_id: The test run ID.
+
+        Returns:
+            dict: The test run detail response.
+        """
+        return self.api_handler.get_test_run(self.region, self.project_id, test_run_id)

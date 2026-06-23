@@ -39,6 +39,7 @@ from poly.output.console import (
     handle_exception,
     info,
     plain,
+    poll_test_run_live,
     print_agents,
     print_branches,
     print_conversations,
@@ -4842,20 +4843,27 @@ class AgentStudioCLI:
             info(f"Running tests for {project.account_id}/{project.project_id}...")
 
         test_info = project.trigger_tests(test_ids)
+        test_run_id = test_info.get("id")
 
-        if not output_json:
-            test_run_id = test_info.get("id")
-            test_count = test_info.get("test_case_count", "?")
-            success(
-                f"Triggered test run [bold]{test_run_id}[/bold] "
-                f"({test_count} test{'s' if test_count != 1 else ''})"
-            )
+        if output_json:
+            json_output["test_run"] = test_info
+            json_output["success"] = True
+            json_print(json_output)
+            return
+
+        test_count = test_info.get("test_case_count", "?")
+        success(
+            f"Triggered test run [bold]{test_run_id}[/bold] "
+            f"({test_count} test{'s' if test_count != 1 else ''})"
+        )
+
+        if dont_poll:
             info(
                 f"Use [bold]poly test get {test_run_id}[/bold] to check the status of the test run."
             )
-        else:
-            json_output["test_run"] = test_info
-            json_output["success"] = True
+            return
+
+        poll_test_run_live(project.get_test_run, test_run_id, matched)
 
     @classmethod
     def start(cls, base_path: str) -> None:

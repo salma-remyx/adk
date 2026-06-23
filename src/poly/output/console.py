@@ -15,7 +15,9 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from rich import box
 from rich.console import Console, Group
+from rich.live import Live
 from rich.panel import Panel
+from rich.spinner import Spinner
 from rich.syntax import Syntax
 from rich.table import Table
 from rich.text import Text
@@ -876,3 +878,97 @@ def handle_exception(exc: Exception) -> None:
         err_console.print("[muted]Run with --verbose for the full traceback.[/muted]")
 
     sys.exit(1)
+
+
+_TEST_STATUS_STYLES = {
+    "passed": ("Passed", "green"),
+    "failed": ("Failed", "red"),
+    "error": ("Error", "red"),
+}
+
+
+def _build_test_table(
+    test_results: list[dict],
+    test_names: dict[str, str],
+    finished: bool = False,
+) -> Table:
+    """Build a Rich table for test run results."""
+    table = Table(show_header=False, show_edge=False, pad_edge=False)
+    table.add_column("test", no_wrap=True)
+    table.add_column("status", no_wrap=True)
+    for entry in test_results:
+        case_id = entry.get("testCaseId", "")
+        name = test_names.get(case_id, case_id)
+        status = entry.get("status", "pending")
+        if finished and status in ("pending", "running", "in_progress"):
+            status = "error"
+        label, style = _TEST_STATUS_STYLES.get(status, ("Pending...", "yellow"))
+        if status in ("pending", "running", "in_progress"):
+            status_cell = Spinner(
+                "dots",
+                text=f"[{style}][{label}][/{style}]",
+                style=style,
+            )
+        else:
+            status_cell = Text(f"[{label}]", style=style)
+        table.add_row(name, status_cell)
+    return table
+
+
+def poll_test_run_live(
+    get_test_run: Callable[[str], dict],
+    test_run_id: str,
+    matched_tests: list,
+    poll_interval: int = 5,
+) -> dict:
+    """Poll a test run with a live-updating display.
+
+    Args:
+        get_test_run: Callable that takes a test run ID and returns the run dict.
+        test_run_id: The test run ID to poll.
+        matched_tests: List of TestCase objects (must have resource_id and name).
+        poll_interval: Seconds between polls.
+
+    Returns:
+        dict: The final test run response.
+    """
+    import time
+
+    test_names = {t.resource_id: t.name for t in matched_tests}
+    pending_results = [{"testCaseId": t.resource_id, "status": "pending"} for t in matched_tests]
+
+    merged = pending_results
+    with Live(
+        _build_test_table(merged, test_names),
+        console=console,
+        refresh_per_second=10,
+    ) as live:
+        while True:
+            time.sleep(poll_interval)
+            result = get_test_run(test_run_id)
+            test_results = result.get("testHistory", [])
+
+            actual_by_id = {r.get("testCaseId"): r for r in test_results}
+            merged = [actual_by_id.get(p.get("testCaseId"), p) for p in pending_results]
+            live.update(_build_test_table(merged, test_names))
+
+            status = result.get("status", "")
+            if status not in ("pending", "running", "in_progress"):
+                live.update(_build_test_table(merged, test_names, finished=True))
+                break
+
+    passed = result.get("passedCount", 0)
+    failed = result.get("failedCount", 0)
+    error_count = result.get("errorCount", 0)
+    total = result.get("testCaseCount", len(matched_tests))
+
+    if failed or error_count:
+        error(
+            f"Test run {result.get('status', 'unknown')}: "
+            f"{passed}/{total} passed, "
+            f"{failed} failed, {error_count} errors"
+        )
+    else:
+        success(f"Test run {result.get('status', 'unknown')}: {passed}/{total} passed")
+
+    return result
