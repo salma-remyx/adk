@@ -2970,3 +2970,53 @@ class AgentStudioProject:
             message=message,
         )
         return True
+
+    def resolve_tests(
+        self, all: bool = False, files: list[str] = None, tags: list[str] = None
+    ) -> list["TestCase"]:
+        """Resolve which tests match the given criteria.
+
+        Args:
+            all: If True, select all tests.
+            tags: List of tags to filter by. Ignored if `all` is True.
+            files: List of specific test resource IDs to select.
+
+        Returns:
+            list[TestCase]: The matched test cases.
+        """
+        tests = self.resources.get(TestCase, {})
+        matched: list[TestCase] = []
+        if all:
+            matched = list(tests.values())
+        elif tags:
+            for test in tests.values():
+                if any(tag in test.tags for tag in tags):
+                    matched.append(test)
+        elif files:
+            for test in tests.values():
+                if test.resource_id in files:
+                    matched.append(test)
+
+        if not matched:
+            raise ValueError("No tests found to run based on the provided criteria.")
+
+        return matched
+
+    def trigger_tests(self, test_ids: list[str]) -> dict:
+        """Trigger tests for the project.
+
+        Args:
+            test_ids: List of test case resource IDs to run.
+
+        Returns:
+            dict: API response with test run details.
+        """
+        if not test_ids:
+            raise ValueError("No test IDs provided.")
+
+        return self.api_handler.trigger_test_run(
+            self.region,
+            self.project_id,
+            test_ids,
+            self.branch_id,
+        )

@@ -1366,6 +1366,69 @@ class AgentStudioCLI:
             help="Output file path. Defaults to <conversation_id>.wav.",
         )
 
+        # TESTING
+        testing_path_parent = ArgumentParser(add_help=False)
+        testing_path_parent.add_argument(
+            "--path",
+            type=str,
+            default=os.getcwd(),
+            help="Base path to the project. Defaults to current working directory.",
+        )
+
+        test_parser = subparsers.add_parser(
+            "test",
+            parents=[verbose_parent, debug_parent],
+            help="Manage and run tests for the project.",
+            description="Manage and run tests for the project.\n\nExamples:\n  poly test\n",
+            formatter_class=RawTextHelpFormatter,
+        )
+        testing_subparsers = test_parser.add_subparsers(dest="test_subcommand", required=True)
+
+        test_run_parser = testing_subparsers.add_parser(
+            "run",
+            parents=[testing_path_parent, json_parent, verbose_parent, debug_parent],
+            help="Run tests for the project.",
+            description=(
+                "Run tests for the project.\n\n"
+                "Examples:\n"
+                "  poly test run\n"
+                "  poly test run --path /path/to/project\n"
+                "  poly test run --files test1.yaml test2.yaml\n"
+            ),
+            formatter_class=RawTextHelpFormatter,
+        )
+        test_run_parser.add_argument(
+            "--files",
+            nargs="*",
+            help="List of test files to run.",
+        )
+        test_run_parser.add_argument(
+            "--tag",
+            type=str,
+            nargs="*",
+            help="Run tests with the specified tag(s).",
+        )
+        test_run_parser.add_argument(
+            "--all",
+            action="store_true",
+            help="Run all tests.",
+        )
+        test_run_parser.add_argument(
+            "--dont-poll",
+            action="store_true",
+            help="Do not poll for test results.",
+        )
+        test_run_parser.add_argument(
+            "--push",
+            action="store_true",
+            help="Push the project before running tests.",
+        )
+        test_run_parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="List the tests that would be run without triggering them.",
+        )
+
         return parser
 
     @classmethod
@@ -1639,6 +1702,19 @@ class AgentStudioCLI:
 
             elif args.command == "login":
                 cls.login(region=args.region)
+
+            elif args.command == "test":
+                if args.test_subcommand == "run":
+                    cls.testing_run(
+                        args.path,
+                        files=args.files,
+                        tags=args.tag,
+                        run_all=args.all,
+                        dont_poll=args.dont_poll,
+                        push=args.push,
+                        output_json=args.json,
+                        dry_run=args.dry_run,
+                    )
 
         except Exception as e:
             if hasattr(args, "json") and args.json:
@@ -4693,6 +4769,93 @@ class AgentStudioCLI:
         else:
             size_mb = size_bytes / 1_000_000
             success(f"Audio saved to {output_path} ({size_mb:.1f} MB)")
+
+    @classmethod
+    def testing_run(
+        cls,
+        base_path: str,
+        files: list[str],
+        tags: list[str] = None,
+        run_all: bool = False,
+        dont_poll: bool = False,
+        push: bool = False,
+        output_json: bool = False,
+        dry_run: bool = False,
+    ) -> None:
+        project = cls._load_project(base_path)
+
+        json_output = {}
+
+        if dry_run:
+            matched = project.resolve_tests(all=run_all, files=files, tags=tags)
+            if output_json:
+                json_print(
+                    {
+                        "success": True,
+                        "test_count": len(matched),
+                        "tests": [{"resource_id": t.resource_id, "name": t.name} for t in matched],
+                    }
+                )
+            else:
+                info(f"Would run {len(matched)} test{'s' if len(matched) != 1 else ''}:")
+                for test in matched:
+                    plain(f"  - {test.name} ({test.resource_id})")
+            return
+
+        if push:
+            if not output_json:
+                info("Pushing project before running tests...")
+            push_success, output, _ = project.push_project(
+                force=False,
+                skip_validation=False,
+                dry_run=False,
+                format=False,
+            )
+            if output == "No changes detected":
+                push_success = True  # Not an error if there are no changes to push
+
+            if push_success:
+                if not output_json:
+                    success("Project pushed successfully.")
+                else:
+                    json_output["push"] = {"success": True, "message": output}
+
+            if not push_success:
+                if output_json:
+                    json_output["push"] = {
+                        "success": False,
+                        "message": "Failed to push project before running tests.",
+                        "error": output,
+                    }
+                    json_print(json_output)
+                else:
+                    error(
+                        f"Failed to push {project.account_id}/{project.project_id} to Agent Studio."
+                    )
+                    plain(output)
+                sys.exit(1)
+
+        matched = project.resolve_tests(all=run_all, files=files, tags=tags)
+        test_ids = [t.resource_id for t in matched]
+
+        if not output_json:
+            info(f"Running tests for {project.account_id}/{project.project_id}...")
+
+        test_info = project.trigger_tests(test_ids)
+
+        if not output_json:
+            test_run_id = test_info.get("id")
+            test_count = test_info.get("test_case_count", "?")
+            success(
+                f"Triggered test run [bold]{test_run_id}[/bold] "
+                f"({test_count} test{'s' if test_count != 1 else ''})"
+            )
+            info(
+                f"Use [bold]poly test get {test_run_id}[/bold] to check the status of the test run."
+            )
+        else:
+            json_output["test_run"] = test_info
+            json_output["success"] = True
 
     @classmethod
     def start(cls, base_path: str) -> None:

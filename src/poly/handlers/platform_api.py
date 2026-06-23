@@ -35,6 +35,10 @@ CONVERSATION_AUDIO_URL = "/v1/agents/{project_id}/conversations/{conversation_id
 LIST_AGENTS_URL = "/v1/accounts/{account_id}/agents"
 DELETE_AGENT_URL = "/v1/agents/{agent_id}"
 DUPLICATE_AGENT_URL = "/v1/agents/{agent_id}/duplicate"
+TEST_RUNS_URL = "/v1/agents/{project_id}/testing/test-runs"
+TEST_RUN_URL = "/v1/agents/{project_id}/testing/test-runs/{test_run_id}"
+TEST_HISTORY_URL = "/v1/agents/{project_id}/testing/test-history"
+TRIGGER_TEST_RUN_URL = "/v1/agents/{project_id}/testing/test-runs/trigger"
 
 
 class PlatformAPIHandler:
@@ -808,3 +812,107 @@ class PlatformAPIHandler:
             raise
 
         return response.content
+
+    @staticmethod
+    def list_test_runs(
+        region: str,
+        project_id: str,
+        limit: int = 100,
+        offset: int = 0,
+        test_set_id: ty.Optional[str] = None,
+        branch_id: ty.Optional[str] = None,
+    ) -> dict:
+        """List test runs for a project.
+
+        Args:
+            region: The region name.
+            project_id: The project ID (agent ID).
+            limit: Max number of test runs to return.
+            offset: Number of test runs to skip.
+            test_set_id: Optional filter by test set ID.
+            branch_id: Optional filter by branch ID.
+
+        Returns:
+            dict: The API response with test runs.
+        """
+        endpoint = TEST_RUNS_URL.format(project_id=project_id)
+        params: dict[str, ty.Any] = {"limit": limit, "offset": offset}
+        if test_set_id:
+            params["testSetId"] = test_set_id
+        if branch_id:
+            params["branchId"] = branch_id
+        return PlatformAPIHandler.make_request(region, endpoint, "GET", params=params)
+
+    @staticmethod
+    def get_test_run(
+        region: str,
+        project_id: str,
+        test_run_id: str,
+    ) -> dict:
+        """Get a single test run by ID, including nested test history.
+
+        Args:
+            region: The region name.
+            project_id: The project ID (agent ID).
+            test_run_id: The test run ID.
+
+        Returns:
+            dict: The test run detail response.
+        """
+        endpoint = TEST_RUN_URL.format(project_id=project_id, test_run_id=test_run_id)
+        return PlatformAPIHandler.make_request(region, endpoint, "GET")
+
+    @staticmethod
+    def list_test_history(
+        region: str,
+        project_id: str,
+        limit: int = 100,
+        offset: int = 0,
+        test_case_id: ty.Optional[str] = None,
+        branch_id: ty.Optional[str] = None,
+    ) -> dict:
+        """List test execution history for a project.
+
+        Args:
+            region: The region name.
+            project_id: The project ID (agent ID).
+            limit: Max number of history entries to return.
+            offset: Number of history entries to skip.
+            test_case_id: Optional filter by test case ID.
+            branch_id: Optional filter by branch ID.
+
+        Returns:
+            dict: The API response with test history.
+        """
+        endpoint = TEST_HISTORY_URL.format(project_id=project_id)
+        params: dict[str, ty.Any] = {"limit": limit, "offset": offset}
+        if test_case_id:
+            params["testCaseId"] = test_case_id
+        if branch_id:
+            params["branchId"] = branch_id
+        return PlatformAPIHandler.make_request(region, endpoint, "GET", params=params)
+
+    @staticmethod
+    def trigger_test_run(
+        region: str,
+        project_id: str,
+        test_case_ids: list[str],
+        branch_id: str,
+    ) -> dict:
+        """Trigger a test run for a project.
+
+        Args:
+            region: The region name.
+            project_id: The project ID (agent ID).
+            test_case_ids: List of test case IDs to run.
+            branch_id: The branch ID to run tests against.
+
+        Returns:
+            dict: The created test run response.
+        """
+        endpoint = TRIGGER_TEST_RUN_URL.format(project_id=project_id)
+        data = {
+            "testCaseIds": test_case_ids,
+            "branchId": branch_id,
+        }
+        return PlatformAPIHandler.make_request(region, endpoint, "POST", data=data)

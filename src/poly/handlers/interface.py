@@ -781,3 +781,93 @@ class AgentStudioInterface:
         return PlatformAPIHandler.get_conversation_audio(
             region, project_id, conversation_id, direction, redacted
         )
+
+    @staticmethod
+    def list_test_runs(
+        region: str,
+        project_id: str,
+        limit: int = 100,
+        offset: int = 0,
+        test_set_id: Optional[str] = None,
+        branch_id: Optional[str] = None,
+    ) -> dict:
+        """List test runs for a project.
+
+        Args:
+            region: The region name.
+            project_id: The project ID (agent ID).
+            limit: Max number of test runs to return.
+            offset: Number of test runs to skip.
+            test_set_id: Optional filter by test set ID.
+            branch_id: Optional filter by branch ID.
+
+        Returns:
+            dict: The API response with test runs.
+        """
+        return PlatformAPIHandler.list_test_runs(
+            region, project_id, limit, offset, test_set_id, branch_id
+        )
+
+    @staticmethod
+    def get_test_run(
+        region: str,
+        project_id: str,
+        test_run_id: str,
+    ) -> dict:
+        """Get a single test run by ID, including nested test history.
+
+        Args:
+            region: The region name.
+            project_id: The project ID (agent ID).
+            test_run_id: The test run ID.
+
+        Returns:
+            dict: The test run detail response.
+        """
+        return PlatformAPIHandler.get_test_run(region, project_id, test_run_id)
+
+    @staticmethod
+    def list_test_history(
+        region: str,
+        project_id: str,
+        limit: int = 100,
+        offset: int = 0,
+        test_case_id: Optional[str] = None,
+        branch_id: Optional[str] = None,
+    ) -> dict:
+        """List test execution history for a project.
+
+        Args:
+            region: The region name.
+            project_id: The project ID (agent ID).
+            limit: Max number of history entries to return.
+            offset: Number of history entries to skip.
+            test_case_id: Optional filter by test case ID.
+            branch_id: Optional filter by branch ID.
+
+        Returns:
+            dict: The API response with test history.
+        """
+        return PlatformAPIHandler.list_test_history(
+            region, project_id, limit, offset, test_case_id, branch_id
+        )
+
+    @staticmethod
+    def trigger_test_run(
+        region: str,
+        project_id: str,
+        test_case_ids: list[str],
+        branch_id: str,
+    ) -> dict:
+        """Trigger a test run for a project.
+
+        Args:
+            region: The region name.
+            project_id: The project ID (agent ID).
+            test_case_ids: List of test case IDs to run.
+            branch_id: The branch ID to run tests against.
+
+        Returns:
+            dict: The created test run response.
+        """
+        return PlatformAPIHandler.trigger_test_run(region, project_id, test_case_ids, branch_id)
