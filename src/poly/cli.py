@@ -515,6 +515,79 @@ class AgentStudioCLI:
             " If not provided the platform will generate one.",
         )
 
+        # TEMPLATE
+        template_parser = subparsers.add_parser(
+            "template",
+            parents=[],
+            help="Browse and load example project templates.",
+            description=(
+                "Browse and load example project templates.\n\n"
+                "Examples:\n"
+                "  poly template list\n"
+                "  poly template load restaurant-booking\n"
+            ),
+            formatter_class=RawTextHelpFormatter,
+        )
+        template_subparsers = template_parser.add_subparsers(
+            dest="template_subcommand", required=True
+        )
+
+        # TEMPLATE LIST
+        template_list_parser = template_subparsers.add_parser(
+            "list",
+            parents=[verbose_parent, json_parent, debug_parent],
+            help="List available example project templates.",
+            description=(
+                "List available example project templates.\n\n"
+                "Examples:\n"
+                "  poly template list\n"
+                "  poly template list --region us-1\n"
+            ),
+            formatter_class=RawTextHelpFormatter,
+        )
+        template_list_parser.add_argument(
+            "--region",
+            type=str,
+            choices=REGIONS,
+            help="Region to query for templates. Defaults to the current project's region.",
+        )
+
+        # TEMPLATE LOAD
+        template_load_parser = template_subparsers.add_parser(
+            "load",
+            parents=[verbose_parent, json_parent, debug_parent],
+            help="Load an example template into the current project.",
+            description=(
+                "Load an example template into the current project.\n\n"
+                "WARNING: This overwrites your local project resources with the template"
+                " contents.\n\n"
+                "Examples:\n"
+                "  poly template load\n"
+                "  poly template load restaurant-booking\n"
+                "  poly template load restaurant-booking --force\n"
+            ),
+            formatter_class=RawTextHelpFormatter,
+        )
+        template_load_parser.add_argument(
+            "template_name",
+            nargs="?",
+            type=str,
+            help="Name of the template to load. If omitted, an interactive picker is shown.",
+        )
+        template_load_parser.add_argument(
+            "--path",
+            type=str,
+            default=os.getcwd(),
+            help="Path to the project. Defaults to current working directory.",
+        )
+        template_load_parser.add_argument(
+            "--force",
+            "-f",
+            action="store_true",
+            default=False,
+            help="Skip the overwrite confirmation prompt.",
+        )
+
         # PULL
         pull_parser = subparsers.add_parser(
             "pull",
@@ -1442,6 +1515,20 @@ class AgentStudioCLI:
                         output_json=args.json,
                     )
 
+            elif args.command == "template":
+                if args.template_subcommand == "list":
+                    cls.list_templates(
+                        region=args.region,
+                        output_json=args.json,
+                    )
+                elif args.template_subcommand == "load":
+                    cls.load_template(
+                        path=args.path,
+                        template_name=args.template_name,
+                        force=args.force,
+                        output_json=args.json,
+                    )
+
             elif args.command == "pull":
                 cls.pull(
                     args.path,
@@ -1940,6 +2027,59 @@ class AgentStudioCLI:
             output_json=output_json,
         )
 
+        if not output_json and sys.stdin.isatty():
+            try:
+                cls._offer_template_on_create(base_path, region, account_id, project_id)
+            except Exception:
+                logger.debug("Template offering skipped", exc_info=True)
+
+    @classmethod
+    def _offer_template_on_create(
+        cls,
+        base_path: str,
+        region: str,
+        account_id: str,
+        project_id: str,
+    ) -> None:
+        """Optionally load a template into a freshly created project."""
+        try:
+            templates = AgentStudioInterface.list_example_projects(region)
+        except Exception:
+            return
+        if not templates:
+            return
+
+        choices = [questionary.Choice(title="No template (blank project)", value=None)]
+        for t in templates:
+            name = t.get("name", "")
+            desc = t.get("description", "")
+            title = f"{name} — {desc}" if desc else name
+            choices.append(questionary.Choice(title=title, value=name))
+
+        template_name = questionary.select(
+            "Start from a template?",
+            choices=choices,
+            use_jk_keys=False,
+        ).ask()
+
+        if not template_name:
+            return
+
+        project_path = os.path.join(base_path, account_id, project_id)
+        project = cls.read_project_config(project_path)
+        if not project:
+            return
+
+        with console.status(f"[info]Loading template [bold]{template_name}[/bold]...[/info]"):
+            try:
+                template_data = AgentStudioInterface.get_example_project(region, template_name)
+                project.pull_project(force=True, projection_json=template_data)
+            except Exception as e:
+                warning(f"Could not load template: {e}")
+                return
+
+        success(f"Loaded template [bold]{template_name}[/bold]")
+
     @classmethod
     def list_projects(
         cls,
@@ -2354,6 +2494,179 @@ class AgentStudioCLI:
         else:
             success(
                 f"Duplicated [bold]{display_name}[/bold] → [bold]{new_display}[/bold] ({new_id})"
+            )
+
+    @classmethod
+    def _resolve_region_for_templates(
+        cls,
+        region: str | None,
+        output_json: bool = False,
+    ) -> str | None:
+        """Resolve a region for template commands when none is provided.
+
+        Tries the current project first, then falls back to interactive selection.
+        """
+        if region:
+            return region
+
+        project = cls.read_project_config(os.getcwd())
+        if project:
+            return project.region
+
+        api_handler = AgentStudioInterface()
+        with console.status("[info]Fetching available regions...[/info]"):
+            regions = api_handler.get_accessible_regions()
+        if not regions:
+            if output_json:
+                json_print(
+                    {"success": False, "error": "No accessible regions found for your API key."}
+                )
+            else:
+                error("No accessible regions found for your API key.")
+            sys.exit(1)
+        if len(regions) == 1:
+            return regions[0]
+        selected = questionary.select("Select Region", choices=regions).ask()
+        if not selected:
+            warning("No region selected. Exiting.")
+            return None
+        return selected
+
+    @classmethod
+    def _fetch_templates(
+        cls,
+        region: str,
+        output_json: bool = False,
+    ) -> list[dict]:
+        """Fetch example project templates from the API. Returns [] on failure."""
+        api_handler = AgentStudioInterface()
+        try:
+            return api_handler.list_example_projects(region)
+        except Exception as e:
+            if output_json:
+                json_print({"success": False, "error": f"Failed to fetch templates: {e}"})
+                sys.exit(1)
+            error(f"Failed to fetch templates: {e}")
+            sys.exit(1)
+
+    @classmethod
+    def _pick_template(
+        cls,
+        templates: list[dict],
+    ) -> str | None:
+        """Show an interactive template picker. Returns template name or None."""
+        choices = []
+        for t in templates:
+            name = t.get("name", "")
+            desc = t.get("description", "")
+            title = f"{name} — {desc}" if desc else name
+            choices.append(questionary.Choice(title=title, value=name))
+
+        return questionary.select(
+            "Select a template",
+            choices=choices,
+            use_search_filter=True,
+            use_jk_keys=False,
+        ).ask()
+
+    @classmethod
+    def list_templates(
+        cls,
+        region: str | None = None,
+        output_json: bool = False,
+    ) -> None:
+        """List available example project templates."""
+        region = cls._resolve_region_for_templates(region, output_json)
+        if not region:
+            return
+
+        templates = cls._fetch_templates(region, output_json)
+
+        if output_json:
+            json_print({"success": True, "templates": templates})
+            return
+
+        if not templates:
+            info("No templates available.")
+            return
+
+        info(f"Available templates ({len(templates)}):\n")
+        for t in templates:
+            name = t.get("name", "unknown")
+            desc = t.get("description", "")
+            if desc:
+                plain(f"  [bold]{name}[/bold] — {desc}")
+            else:
+                plain(f"  [bold]{name}[/bold]")
+        plain("")
+
+    @classmethod
+    def load_template(
+        cls,
+        path: str,
+        template_name: str | None = None,
+        force: bool = False,
+        output_json: bool = False,
+    ) -> None:
+        """Load an example template into the current project."""
+        project = cls._load_project(path, output_json=output_json)
+        region = project.region
+        api_handler = AgentStudioInterface()
+
+        templates = cls._fetch_templates(region, output_json)
+        if not templates:
+            if output_json:
+                json_print({"success": False, "error": "No templates available."})
+            else:
+                info("No templates available.")
+            return
+
+        if not template_name:
+            if output_json:
+                json_print(
+                    {
+                        "success": False,
+                        "error": "template_name is required with --json.",
+                    }
+                )
+                sys.exit(1)
+            template_name = cls._pick_template(templates)
+            if not template_name:
+                warning("No template selected. Exiting.")
+                return
+
+        if not force and not output_json:
+            confirmed = questionary.confirm(
+                f"Loading '{template_name}' will overwrite local project resources. Continue?",
+                default=False,
+                auto_enter=False,
+            ).ask()
+            if not confirmed:
+                info("Cancelled.")
+                return
+
+        with (
+            console.status(f"[info]Loading template [bold]{template_name}[/bold]...[/info]")
+            if not output_json
+            else nullcontext()
+        ):
+            try:
+                template_data = api_handler.get_example_project(region, template_name)
+            except Exception as e:
+                if output_json:
+                    json_print({"success": False, "error": f"Failed to fetch template: {e}"})
+                else:
+                    error(f"Failed to fetch template: {e}")
+                sys.exit(1)
+
+            project.pull_project(force=True, projection_json=template_data)
+
+        if output_json:
+            json_print({"success": True, "template": template_name})
+        else:
+            success(
+                f"Loaded template [bold]{template_name}[/bold]"
+                f" into {project.account_id}/{project.project_id}"
             )
 
     @classmethod
