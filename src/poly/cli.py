@@ -13,6 +13,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import webbrowser
 from argparse import SUPPRESS, ArgumentParser, RawTextHelpFormatter
 from contextlib import nullcontext
@@ -75,6 +76,8 @@ from poly.project import (
 )
 
 logger = logging.getLogger(__name__)
+
+EXAMPLE_PROJECTS_REPO_URL = "https://github.com/polyai/example-projects.git"
 
 # Single-line values longer than this are treated like multiline (no terminal dump; editor for edit).
 _BRANCH_MERGE_LONG_LINE_THRESHOLD = 800
@@ -2066,14 +2069,9 @@ class AgentStudioCLI:
             return
 
         project_path = os.path.join(base_path, account_id, project_id)
-        project = cls.read_project_config(project_path)
-        if not project:
-            return
-
         with console.status(f"[info]Loading template [bold]{template_name}[/bold]...[/info]"):
             try:
-                template_data = AgentStudioInterface.get_example_project(region, template_name)
-                project.pull_project(force=True, projection_json=template_data)
+                cls._clone_and_copy_template(template_name, project_path)
             except Exception as e:
                 warning(f"Could not load template: {e}")
                 return
@@ -2600,6 +2598,36 @@ class AgentStudioCLI:
                 plain(f"  [bold]{name}[/bold]")
         plain("")
 
+    @staticmethod
+    def _clone_and_copy_template(template_name: str, dest_path: str) -> None:
+        """Shallow-clone the example projects repo and copy a template into *dest_path*."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            result = subprocess.run(
+                ["git", "clone", "--depth", "1", EXAMPLE_PROJECTS_REPO_URL, tmp_dir],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                raise RuntimeError(
+                    f"Failed to clone example projects repository: {result.stderr.strip()}"
+                )
+
+            template_dir = os.path.join(tmp_dir, template_name)
+            if not os.path.isdir(template_dir):
+                raise ValueError(f"Template '{template_name}' not found in repository.")
+
+            for item in os.listdir(template_dir):
+                if item in (PROJECT_CONFIG_FILE, "_gen"):
+                    continue
+                src = os.path.join(template_dir, item)
+                dst = os.path.join(dest_path, item)
+                if os.path.isdir(src):
+                    if os.path.exists(dst):
+                        shutil.rmtree(dst)
+                    shutil.copytree(src, dst)
+                else:
+                    shutil.copy2(src, dst)
+
     @classmethod
     def load_template(
         cls,
@@ -2611,7 +2639,6 @@ class AgentStudioCLI:
         """Load an example template into the current project."""
         project = cls._load_project(path, output_json=output_json)
         region = project.region
-        api_handler = AgentStudioInterface()
 
         templates = cls._fetch_templates(region, output_json)
         if not templates:
@@ -2645,21 +2672,20 @@ class AgentStudioCLI:
                 info("Cancelled.")
                 return
 
-        with (
+        ctx = (
             console.status(f"[info]Loading template [bold]{template_name}[/bold]...[/info]")
             if not output_json
             else nullcontext()
-        ):
+        )
+        with ctx:
             try:
-                template_data = api_handler.get_example_project(region, template_name)
+                cls._clone_and_copy_template(template_name, project.root_path)
             except Exception as e:
                 if output_json:
-                    json_print({"success": False, "error": f"Failed to fetch template: {e}"})
+                    json_print({"success": False, "error": str(e)})
                 else:
-                    error(f"Failed to fetch template: {e}")
+                    error(str(e))
                 sys.exit(1)
-
-            project.pull_project(force=True, projection_json=template_data)
 
         if output_json:
             json_print({"success": True, "template": template_name})
