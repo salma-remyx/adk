@@ -1434,14 +1434,14 @@ class AgentStudioCLI:
         )
 
         test_get_parser = testing_subparsers.add_parser(
-            "get",
+            "show",
             parents=[testing_path_parent, json_parent, verbose_parent, debug_parent],
-            help="Get test run results.",
+            help="View test run results.",
             description=(
                 "Get test run results.\n\n"
                 "Examples:\n"
-                "  poly test get <run_id>\n"
-                "  poly test get <run_id> <test_case_id>\n"
+                "  poly test show <run_id>\n"
+                "  poly test show <run_id> <test_case_id>\n"
             ),
             formatter_class=RawTextHelpFormatter,
         )
@@ -1771,8 +1771,8 @@ class AgentStudioCLI:
                         output_json=args.json,
                         dry_run=args.dry_run,
                     )
-                elif args.test_subcommand == "get":
-                    cls.testing_get(
+                elif args.test_subcommand == "show":
+                    cls.testing_show(
                         args.path,
                         run_id=args.run_id,
                         test_case_id=args.test_case_id,
@@ -4953,14 +4953,14 @@ class AgentStudioCLI:
         print_test_run_list(result)
 
     @classmethod
-    def testing_get(
+    def testing_show(
         cls,
         base_path: str,
         run_id: str,
         test_case_id: str = None,
         output_json: bool = False,
     ) -> None:
-        """Get test run results, optionally for a specific test case."""
+        """Show test run results, optionally for a specific test case."""
         project = cls._load_project(base_path)
         result = project.get_test_run(run_id)
 
