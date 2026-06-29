@@ -40,6 +40,7 @@ from poly.output.console import (
     info,
     plain,
     poll_test_run_live,
+    print_test_run_list,
     print_test_run_summary,
     print_test_detail,
     print_agents,
@@ -1457,6 +1458,33 @@ class AgentStudioCLI:
             help="Optional test case ID for detailed view.",
         )
 
+        test_list_parser = testing_subparsers.add_parser(
+            "list",
+            parents=[testing_path_parent, json_parent, verbose_parent, debug_parent],
+            help="List test runs.",
+            description=(
+                "List test runs.\n\n"
+                "Examples:\n"
+                "  poly test list\n"
+                "  poly test list --limit 10 --offset 5\n"
+            ),
+            formatter_class=RawTextHelpFormatter,
+        )
+
+        test_list_parser.add_argument(
+            "--limit",
+            type=int,
+            default=10,
+            help="Number of test runs to list. Defaults to 10.",
+        )
+
+        test_list_parser.add_argument(
+            "--offset",
+            type=int,
+            default=0,
+            help="Number of test runs to skip. Defaults to 0.",
+        )
+
         return parser
 
     @classmethod
@@ -1748,6 +1776,13 @@ class AgentStudioCLI:
                         args.path,
                         run_id=args.run_id,
                         test_case_id=args.test_case_id,
+                        output_json=args.json,
+                    )
+                elif args.test_subcommand == "list":
+                    cls.testing_list(
+                        args.path,
+                        limit=args.limit,
+                        offset=args.offset,
                         output_json=args.json,
                     )
 
@@ -4898,6 +4933,24 @@ class AgentStudioCLI:
             return
 
         poll_test_run_live(project.get_test_run, test_run_id, matched)
+
+    @classmethod
+    def testing_list(
+        cls,
+        base_path: str,
+        limit: int = 10,
+        offset: int = 0,
+        output_json: bool = False,
+    ) -> None:
+        """List test runs."""
+        project = cls._load_project(base_path)
+        result = project.list_test_runs(limit=limit, offset=offset)
+
+        if output_json:
+            json_print({"success": True, "test_runs": result})
+            return
+
+        print_test_run_list(result)
 
     @classmethod
     def testing_get(

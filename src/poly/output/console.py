@@ -1023,6 +1023,60 @@ def _print_test_failures(
         console.print()
 
 
+def print_test_run_list(result: dict) -> None:
+    """Print a table of test runs.
+
+    Args:
+        result: API response dict with a 'testRuns' key.
+    """
+    runs = result.get("testRuns") or []
+    if not runs:
+        warning("No test runs found.")
+        return
+
+    table = Table(box=None, show_header=True, header_style="bold", padding=(0, 1))
+    table.add_column("Run ID", style="bold yellow", no_wrap=True)
+    table.add_column("Started", no_wrap=True)
+    table.add_column("Status", no_wrap=True)
+    table.add_column("Total", no_wrap=True, justify="right")
+    table.add_column("Passed", no_wrap=True, justify="right")
+    table.add_column("Failed", no_wrap=True, justify="right")
+    table.add_column("Errors", no_wrap=True, justify="right")
+    table.add_column("Run", no_wrap=True)
+
+    for run in runs:
+        status = run.get("status", "unknown")
+        passed = run.get("passedCount", 0)
+        failed = run.get("failedCount", 0)
+        errors = run.get("errorCount", 0)
+
+        if status == "completed" and failed == 0 and errors == 0:
+            status_display = "[green]completed[/green]"
+        elif status == "completed":
+            status_display = "[yellow]completed[/yellow]"
+        elif status in _PENDING_STATUSES:
+            status_display = f"[cyan]{status}[/cyan]"
+        else:
+            status_display = status
+
+        started = run.get("startedAt") or "—"
+        if started != "—":
+            started = _format_iso_timestamp(started)
+
+        table.add_row(
+            run.get("id", "—"),
+            started,
+            status_display,
+            str(run.get("testCaseCount", "—")),
+            f"[green]{passed}[/green]",
+            f"[red]{failed}[/red]" if failed else str(failed),
+            f"[red]{errors}[/red]" if errors else str(errors),
+            run.get("startedBy") or "—",
+        )
+
+    console.print(table)
+
+
 def print_test_run_summary(result: dict) -> None:
     """Print a summary of a test run."""
     table = Table(show_header=False, box=None, padding=(0, 1))

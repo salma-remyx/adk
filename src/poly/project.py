@@ -3031,3 +3031,17 @@ class AgentStudioProject:
             dict: The test run detail response.
         """
         return self.api_handler.get_test_run(self.region, self.project_id, test_run_id)
+
+    def list_test_runs(self, limit: int = 10, offset: int = 0) -> dict:
+        """List test runs for the project.
+
+        Args:
+            limit: The maximum number of test runs to return.
+            offset: The number of test runs to skip before starting to collect the result set.
+
+        Returns:
+            dict: The list of test runs.
+        """
+        return self.api_handler.list_test_runs(
+            self.region, self.project_id, limit, offset, branch_id=self.branch_id
+        )
