@@ -628,7 +628,7 @@ class GetDiffsTest(unittest.TestCase):
 
     def test_get_diffs_no_changes(self):
         project = AgentStudioProject.from_dict(PROJECT_DATA, TEST_DIR)
-        diffs = project.get_diffs(all_files=True)
+        diffs = project.get_diffs()
         self.assertEqual(diffs, {})
 
     def test_get_diffs_new_resource(self):
@@ -636,7 +636,7 @@ class GetDiffsTest(unittest.TestCase):
         # Remove a topic so it seems there's a new one
         project_data["resources"]["topics"].pop("TOPIC-Topic 1")
         project = AgentStudioProject.from_dict(project_data, TEST_DIR)
-        diffs = project.get_diffs(all_files=True)
+        diffs = project.get_diffs()
 
         topic_path = os.path.join("topics", "topic_1.yaml")
         self.assertIn(topic_path, diffs)
@@ -661,7 +661,7 @@ class GetDiffsTest(unittest.TestCase):
             "function_type": "global",
         }
         project = AgentStudioProject.from_dict(project_data, TEST_DIR)
-        diffs = project.get_diffs(all_files=True)
+        diffs = project.get_diffs()
 
         func_path = os.path.join(TEST_DIR, "functions", "extra_function.py")
         self.assertIn(func_path, diffs)
@@ -678,7 +678,7 @@ class GetDiffsTest(unittest.TestCase):
             'from _gen import *  # <AUTO GENERATED>\n\n@func_description(\'A test function for global use.\')\ndef test_function(conv: Conversation):\n    """A modified test function."""\n    return "Modified return value"\n'
         )
         project = AgentStudioProject.from_dict(project_data, TEST_DIR)
-        diffs = project.get_diffs(all_files=True)
+        diffs = project.get_diffs()
 
         func_path = os.path.join("functions", "test_function.py")
         self.assertIn(func_path, diffs)
@@ -705,7 +705,7 @@ class GetDiffsTest(unittest.TestCase):
             "function_type": "global",
         }
         project = AgentStudioProject.from_dict(project_data, TEST_DIR)
-        diffs = project.get_diffs(all_files=True)
+        diffs = project.get_diffs()
 
         topic_path = os.path.join("topics", "topic_1.yaml")
         func_path = os.path.join(TEST_DIR, "functions", "extra_function.py")
@@ -738,7 +738,7 @@ class GetDiffsTest(unittest.TestCase):
         }
         project = AgentStudioProject.from_dict(project_data, TEST_DIR)
         requested_file = os.path.join(TEST_DIR, "topics", "topic_1.yaml")
-        diffs = project.get_diffs(files=[requested_file])
+        diffs = project.get_diffs(file_paths=[requested_file])
 
         # Topic diff
         topic_path = os.path.join("topics", "topic_1.yaml")
@@ -760,7 +760,7 @@ class GetDiffsTest(unittest.TestCase):
         ]
         step["extracted_entities"] = list(reversed(step["extracted_entities"]))
         project = AgentStudioProject.from_dict(project_data, TEST_DIR)
-        diffs = project.get_diffs(all_files=True)
+        diffs = project.get_diffs()
 
         step_path = os.path.join(
             "flows", "test_flow_with_punctuation!", "steps", "welcome_step.yaml"
@@ -3145,7 +3145,7 @@ class RevertChangesTest(unittest.TestCase):
         project = AgentStudioProject.from_dict(PROJECT_DATA, TEST_DIR)
         target = project.all_resources[0].get_path(project.root_path)
 
-        reverted = project.revert_changes(files=[target])
+        reverted = project.revert_changes(file_paths=[target])
 
         self.assertEqual(reverted, [target])
 
@@ -3153,7 +3153,7 @@ class RevertChangesTest(unittest.TestCase):
         """revert_changes with a path that matches no resource returns an empty list."""
         project = AgentStudioProject.from_dict(PROJECT_DATA, TEST_DIR)
 
-        reverted = project.revert_changes(files=["/nonexistent/path/file.yaml"])
+        reverted = project.revert_changes(file_paths=["/nonexistent/path/file.yaml"])
 
         self.assertEqual(reverted, [])
 

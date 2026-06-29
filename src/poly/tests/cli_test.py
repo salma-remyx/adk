@@ -1067,17 +1067,17 @@ class ComputeDiffTest(unittest.TestCase):
         patch.stopall()
 
     def test_no_before_no_after_returns_local_diffs(self):
-        """Without before/after, calls get_diffs with all_files=True."""
+        """Without before/after, calls get_diffs with empty file_paths."""
         expected = {"file.py": "some diff"}
         self.proj.get_diffs.return_value = expected
 
         result = AgentStudioCLI._compute_diff(TEST_DIR)
 
-        self.proj.get_diffs.assert_called_once_with(all_files=True, files=[])
+        self.proj.get_diffs.assert_called_once_with(file_paths=[])
         self.assertEqual(result, expected)
 
     def test_no_before_no_after_with_files(self):
-        """Without before/after but with files, calls get_diffs with all_files=False."""
+        """Without before/after but with files, calls get_diffs with file_paths."""
         expected = {"file.py": "diff"}
         self.proj.get_diffs.return_value = expected
 
@@ -1085,8 +1085,7 @@ class ComputeDiffTest(unittest.TestCase):
 
         self.proj.get_diffs.assert_called_once()
         call_kwargs = self.proj.get_diffs.call_args[1]
-        self.assertFalse(call_kwargs["all_files"])
-        self.assertEqual(len(call_kwargs["files"]), 1)
+        self.assertEqual(len(call_kwargs["file_paths"]), 1)
 
     def test_only_after_finds_previous_version(self):
         """With only after, resolves to previous version and diffs remote versions."""
@@ -1203,7 +1202,7 @@ class RevertTest(unittest.TestCase):
 
         AgentStudioCLI.revert(TEST_DIR, files=[])
 
-        self.proj.revert_changes.assert_called_once_with(files=[])
+        self.proj.revert_changes.assert_called_once_with(file_paths=[])
 
 
 class PrintDeploymentsTest(unittest.TestCase):
