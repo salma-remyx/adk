@@ -4928,7 +4928,7 @@ class AgentStudioCLI:
 
         if dont_poll:
             info(
-                f"Use [bold]poly test get {test_run_id}[/bold] to check the status of the test run."
+                f"Use [bold]poly test show {test_run_id}[/bold] to check the status of the test run."
             )
             return
 
