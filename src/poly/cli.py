@@ -1393,11 +1393,13 @@ class AgentStudioCLI:
             parents=[testing_path_parent, json_parent, verbose_parent, debug_parent],
             help="Run tests for the project.",
             description=(
-                "Run tests for the project.\n\n"
+                "Run tests for the project. Runs all tests by default.\n"
+                "Use --files or --tag to filter.\n\n"
                 "Examples:\n"
                 "  poly test run\n"
                 "  poly test run --path /path/to/project\n"
                 "  poly test run --files test1.yaml test2.yaml\n"
+                "  poly test run --tag smoke\n"
             ),
             formatter_class=RawTextHelpFormatter,
         )
@@ -1411,11 +1413,6 @@ class AgentStudioCLI:
             type=str,
             nargs="*",
             help="Run tests with the specified tag(s).",
-        )
-        test_run_parser.add_argument(
-            "--all",
-            action="store_true",
-            help="Run all tests.",
         )
         test_run_parser.add_argument(
             "--dont-poll",
@@ -1765,7 +1762,6 @@ class AgentStudioCLI:
                         args.path,
                         files=args.files,
                         tags=args.tag,
-                        run_all=args.all,
                         dont_poll=args.dont_poll,
                         push=args.push,
                         output_json=args.json,
@@ -4846,7 +4842,6 @@ class AgentStudioCLI:
         base_path: str,
         files: list[str],
         tags: list[str] = None,
-        run_all: bool = False,
         dont_poll: bool = False,
         push: bool = False,
         output_json: bool = False,
@@ -4857,7 +4852,7 @@ class AgentStudioCLI:
         json_output = {}
 
         if dry_run:
-            matched = project.resolve_tests(all=run_all, files=files, tags=tags)
+            matched = project.resolve_tests(files=files, tags=tags)
             if output_json:
                 json_print(
                     {
@@ -4904,7 +4899,7 @@ class AgentStudioCLI:
                     plain(output)
                 sys.exit(1)
 
-        matched = project.resolve_tests(all=run_all, files=files, tags=tags)
+        matched = project.resolve_tests(files=files, tags=tags)
         test_ids = [t.resource_id for t in matched]
 
         if not output_json:

@@ -2971,24 +2971,21 @@ class AgentStudioProject:
         )
         return True
 
-    def resolve_tests(
-        self, all_tests: bool = False, files: list[str] = None, tags: list[str] = None
-    ) -> list["TestCase"]:
+    def resolve_tests(self, files: list[str] = None, tags: list[str] = None) -> list["TestCase"]:
         """Resolve which tests match the given criteria.
 
+        Runs all tests by default. Use files or tags to filter.
+
         Args:
-            all_tests: If True, select all tests.
-            tags: List of tags to filter by. Ignored if `all_tests` is True.
-            files: List of specific test resource IDs to select.
+            files: List of specific test file paths to select.
+            tags: List of tags to filter by.
 
         Returns:
             list[TestCase]: The matched test cases.
         """
         tests: dict[str, TestCase] = self.resources.get(TestCase, {})
         matched: list[TestCase] = []
-        if all_tests:
-            matched = list(tests.values())
-        elif tags:
+        if tags:
             for test in tests.values():
                 if any(tag in test.tags.tags for tag in tags):
                     matched.append(test)
@@ -2996,6 +2993,8 @@ class AgentStudioProject:
             for test in tests.values():
                 if test.file_path in files:
                     matched.append(test)
+        else:
+            matched = list(tests.values())
 
         if not matched:
             raise ValueError("No tests found to run based on the provided criteria.")
