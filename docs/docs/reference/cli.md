@@ -649,6 +649,116 @@ The output includes a list of **reverting deployments** — the versions that wi
 
 Without `--force`, the command prompts for confirmation before proceeding.
 
+#### `poly deployments ab-test`
+
+Manage A/B tests between the live and pre-release deployments. A/B tests were previously only manageable through the Agent Studio UI; these subcommands bring full CLI support.
+
+`poly deployments ab-test` requires a subcommand: `start`, `list`, `active`, `update`, or `end`.
+
+~~~bash
+poly deployments ab-test start --name 'v2 test' --variant-version <hash> --traffic 50
+poly deployments ab-test list
+poly deployments ab-test active
+poly deployments ab-test update --traffic 30
+poly deployments ab-test end
+~~~
+
+Only one A/B test can be active per project at a time. `update` and `end` automatically resolve the currently active test — you do not need to supply a test ID.
+
+##### `poly deployments ab-test start`
+
+Start a new A/B test between the current live deployment (control) and a chosen pre-release deployment (variant).
+
+~~~bash
+poly deployments ab-test start --name 'v2 test' --variant-version <hash> --traffic 50
+poly deployments ab-test start   # interactive
+~~~
+
+| Flag | Description |
+|---|---|
+| `--name`, `-n` | Name/label for the A/B test. If omitted in interactive mode, defaults to a timestamp-based name matching the Agent Studio UI format. Required with `--json`. |
+| `--variant-version` | Version hash (full or 9-character prefix) of the pre-release deployment to use as the variant. If omitted, an interactive picker is shown. Required with `--json`. |
+| `--traffic` | Percentage of traffic to route to the variant (0–100). If omitted, defaults to 50 in interactive mode. Required with `--json`. |
+| `--path` | Base path to the project. Defaults to the current working directory. |
+| `--json` | Print a single JSON object on stdout (machine-readable). Requires `--name`, `--variant-version`, and `--traffic`. |
+| `--verbose` | Show full error tracebacks for debugging. |
+
+The variant must be a pre-release deployment whose version differs from the current live deployment. If the variant version matches the live version, the command exits with an error.
+
+In interactive mode, the variant picker lists eligible pre-release deployments, showing their version hash prefix and deployment message. Deployments whose version matches the live version are excluded.
+
+##### `poly deployments ab-test list`
+
+List A/B tests for the project.
+
+~~~bash
+poly deployments ab-test list
+poly deployments ab-test list --limit 20
+poly deployments ab-test list --json
+~~~
+
+| Flag | Description |
+|---|---|
+| `--limit` | Number of A/B tests to return. Defaults to `10`. |
+| `--path` | Base path to the project. Defaults to the current working directory. |
+| `--json` | Print a single JSON object on stdout (machine-readable). |
+| `--verbose` | Show full error tracebacks for debugging. |
+
+The table view shows the test ID, name, status (`active` or `ended`), traffic split, control and variant deployments (as `<hash>  <message>`), and creation time.
+
+##### `poly deployments ab-test active`
+
+Show the currently active A/B test, if any.
+
+~~~bash
+poly deployments ab-test active
+poly deployments ab-test active --json
+~~~
+
+| Flag | Description |
+|---|---|
+| `--path` | Base path to the project. Defaults to the current working directory. |
+| `--json` | Print a single JSON object on stdout (machine-readable). |
+| `--verbose` | Show full error tracebacks for debugging. |
+
+Displays a detail panel with the test name, status, traffic split (control and variant percentages), deployment labels, creator, and timestamps.
+
+##### `poly deployments ab-test update`
+
+Update the traffic split for the active A/B test.
+
+~~~bash
+poly deployments ab-test update --traffic 30
+poly deployments ab-test update   # interactive
+~~~
+
+| Flag | Description |
+|---|---|
+| `--traffic` | New percentage of traffic to route to the variant (0–100). If omitted, prompts interactively using the current value as the default. Required with `--json`. |
+| `--path` | Base path to the project. Defaults to the current working directory. |
+| `--json` | Print a single JSON object on stdout (machine-readable). Requires `--traffic`. |
+| `--verbose` | Show full error tracebacks for debugging. |
+
+If there is no active A/B test the command exits with an error. If the requested traffic percentage is the same as the current value, the command reports that no update is needed and exits without calling the API.
+
+##### `poly deployments ab-test end`
+
+End the active A/B test and choose which deployment wins. If the variant is chosen as the winner, it is automatically promoted to live.
+
+~~~bash
+poly deployments ab-test end --chosen-version <hash>
+poly deployments ab-test end   # interactive
+~~~
+
+| Flag | Description |
+|---|---|
+| `--chosen-version` | Version hash (full or 9-character prefix) of the deployment to keep as the winner. If omitted, an interactive prompt shows the control and variant options. Required with `--json`. |
+| `--path` | Base path to the project. Defaults to the current working directory. |
+| `--json` | Print a single JSON object on stdout (machine-readable). Requires `--chosen-version`. |
+| `--verbose` | Show full error tracebacks for debugging. |
+
+The interactive prompt displays human-readable labels (`<hash>  <message>`) for both the control and variant deployments. If the variant is selected as the winner, the CLI promotes it to live automatically. If promotion fails, a warning is printed but the test is still marked as ended.
+
 ## Machine-readable JSON output
 
 All core subcommands accept a `--json` flag that switches stdout to a single JSON object. This is designed for scripting, CI pipelines, and any integration that needs stable, parseable output rather than human-readable console text.
@@ -676,6 +786,11 @@ poly deployments show abc123def --json
 poly deployments list --json
 poly deployments promote --from <id> --to pre-release --force --json
 poly deployments rollback --to <id> --force --json
+poly deployments ab-test start --name 'v2 test' --variant-version <hash> --traffic 50 --json
+poly deployments ab-test list --json
+poly deployments ab-test active --json
+poly deployments ab-test update --traffic 30 --json
+poly deployments ab-test end --chosen-version <hash> --json
 poly conversations list --json
 poly conversations get <conversation_id> --json
 poly conversations get-audio <conversation_id> --json
@@ -694,6 +809,10 @@ When `--json` is used:
 !!! info "`--json` implies `--force` for deployments commands"
 
     When `--json` is used with `poly deployments promote` or `poly deployments rollback`, the confirmation prompt is automatically skipped (equivalent to passing `--force`).
+
+!!! info "`--json` requires all flags for A/B test commands"
+
+    When `--json` is used with `poly deployments ab-test start`, you must supply `--name`, `--variant-version`, and `--traffic`. For `poly deployments ab-test update`, `--traffic` is required. For `poly deployments ab-test end`, `--chosen-version` is required. Interactive prompts are not supported in JSON mode.
 
 ### JSON output shapes
 
@@ -720,6 +839,11 @@ The exact fields vary by command. Common fields include:
 | `poly deployments show --json` | `success`, `deployment`, `active_deployment_hashes`, `included_deployments`, `is_rollback` |
 | `poly deployments promote --json` | `success`, `from_hash`, `to_env`, `message`, `included_deployments`; `dry_run` when `--dry-run` is used |
 | `poly deployments rollback --json` | `success`, `target_hash`, `message`, `reverted_deployments`; `dry_run` when `--dry-run` is used |
+| `poly deployments ab-test start --json` | `success`, `ab_test` |
+| `poly deployments ab-test list --json` | `success`, `ab_tests` |
+| `poly deployments ab-test active --json` | `success`, `ab_test` (null if none active) |
+| `poly deployments ab-test update --json` | `success`, `ab_test`; `unchanged: true` if traffic was already at the requested value |
+| `poly deployments ab-test end --json` | `success`, `ab_test`, `promoted` (bool); on promote failure: `promoted: false`, `promote_error` |
 | `poly conversations list --json` | `conversations`, `count`, `limit`, `offset` |
 | `poly conversations get --json` | full conversation detail object |
 | `poly conversations get-audio --json` | `success`, `conversation_id`, `direction`, `redacted`, `output_path`, `size_bytes` |
@@ -811,6 +935,36 @@ On dry run, `"dry_run": true` is added and `"success"` reflects the pre-flight s
 
 On dry run, `"dry_run": true` is added. On error, `"success": false` and `"error": "..."` are returned.
 
+#### `poly deployments ab-test start --json` output shape
+
+~~~json
+{
+  "success": true,
+  "ab_test": {
+    "id": "ab-001",
+    "name": "v2 test",
+    "control_deployment_id": "...",
+    "variant_deployment_id": "...",
+    "traffic_percentage": 50,
+    "created_at": "..."
+  }
+}
+~~~
+
+On error, `"success": false` and `"error": "..."` are returned.
+
+#### `poly deployments ab-test end --json` output shape
+
+~~~json
+{
+  "success": true,
+  "ab_test": { ... },
+  "promoted": true
+}
+~~~
+
+If the variant was chosen as the winner, `"promoted": true` and the variant is promoted to live. If promotion fails after the test has been ended, `"promoted": false` and `"promote_error": "..."` are included.
+
 ### `poly push --output-json-commands`
 
 Adds a `commands` array to the JSON output of `poly push`, containing the serialized Agent Studio commands that were staged. Useful for dry-run review and integration testing.
@@ -855,6 +1009,8 @@ A typical CLI workflow looks like this:
 10. browse and debug conversations with `poly conversations list` and `poly conversations get`
 11. merge the branch with `poly branch merge '<message>'`
 12. promote to pre-release or live with `poly deployments promote`
+13. optionally run an A/B test with `poly deployments ab-test start` and monitor or adjust with `poly deployments ab-test active` / `update`
+14. end the A/B test and promote the winner with `poly deployments ab-test end`
 
 !!! info "Run commands from the project folder"
 
