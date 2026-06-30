@@ -1,6 +1,53 @@
 # CHANGELOG
 
 
+## v0.30.0 (2026-06-30)
+
+### Features
+
+- Add A/B test management to deployments CLI ([#203](https://github.com/polyai/adk/pull/203),
+  [`08461c5`](https://github.com/polyai/adk/commit/08461c56901a962f7449c03bacd71822001f686c))
+
+## Summary
+
+Adds `poly deployments ab-test {start|list|active|update|end}` subcommands for managing A/B tests
+  between live and pre-release deployments from the CLI.
+
+## Motivation
+
+A/B tests could previously only be managed through the Agent Studio UI. This adds full CLI support
+  so operators can start, monitor, adjust, and end A/B tests from the terminal or scripts.
+
+## Changes
+
+- API client (`platform_api.py`, `interface.py`): 5 new endpoints — create, list, get active, update
+  traffic, end test - Project model (`project.py`): convenience methods forwarding to the API layer
+  - CLI parser (`cli.py`): `ab-test` sub-subparser under `deployments` with `start`, `list`,
+  `active`, `update`, `end` - All flags (`--name`, `--variant`, `--traffic`) are optional
+  interactively and required with `--json` - `start` prompts for name (defaulting to UI datetime
+  format), pre-release variant picker, and traffic split - `start` validates the variant version
+  differs from the current live version - `update` and `end` auto-resolve the active test (only one
+  per project) - `end` promotes the variant to live if chosen as the winner - `end` shows
+  human-readable deployment labels (hash + message) instead of raw UUIDs - Console display
+  (`console.py`): `print_ab_tests` table and `print_ab_test_detail` panel with traffic splits,
+  version hashes, and deployment names - Status derived from `ended_at` field (no `status` column in
+  the backend model) - 57 new tests covering validation, interactive prompts, HTTP error mapping,
+  promotion flow
+
+## Test strategy
+
+- [x] Added/updated unit tests - [x] Manual CLI testing (`poly <command>`) - [x] Tested against a
+  live Agent Studio project - [ ] N/A (docs, config, or trivial change)
+
+## Checklist
+
+- [x] `ruff check .` and `ruff format --check .` pass - [x] `pytest` passes - [x] No breaking
+  changes to the `poly` CLI interface (or migration path documented) - [x] Commit messages follow
+  [conventional commits](https://www.conventionalcommits.org/)
+
+## Screenshots / Logs
+
+
 ## v0.29.0 (2026-06-25)
 
 ### Features
