@@ -2972,13 +2972,13 @@ class AgentStudioProject:
         return True
 
     def resolve_tests(
-        self, all: bool = False, files: list[str] = None, tags: list[str] = None
+        self, all_tests: bool = False, files: list[str] = None, tags: list[str] = None
     ) -> list["TestCase"]:
         """Resolve which tests match the given criteria.
 
         Args:
-            all: If True, select all tests.
-            tags: List of tags to filter by. Ignored if `all` is True.
+            all_tests: If True, select all tests.
+            tags: List of tags to filter by. Ignored if `all_tests` is True.
             files: List of specific test resource IDs to select.
 
         Returns:
@@ -2986,7 +2986,7 @@ class AgentStudioProject:
         """
         tests: dict[str, TestCase] = self.resources.get(TestCase, {})
         matched: list[TestCase] = []
-        if all:
+        if all_tests:
             matched = list(tests.values())
         elif tags:
             for test in tests.values():

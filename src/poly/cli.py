@@ -4889,8 +4889,7 @@ class AgentStudioCLI:
                     success("Project pushed successfully.")
                 else:
                     json_output["push"] = {"success": True, "message": output}
-
-            if not push_success:
+            else:
                 if output_json:
                     json_output["push"] = {
                         "success": False,

@@ -3256,5 +3256,62 @@ class GetUpdatedSubresourcesTest(unittest.TestCase):
         )
 
 
+class ResolveTestsTest(unittest.TestCase):
+    """Tests for AgentStudioProject.resolve_tests."""
+
+    def setUp(self):
+        self.project = AgentStudioProject.from_dict(PROJECT_DATA, TEST_DIR)
+
+    def test_all_returns_every_test(self):
+        """all_tests=True returns all test cases."""
+        result = self.project.resolve_tests(all_tests=True)
+        self.assertEqual(len(result), 2)
+        names = {t.name for t in result}
+        self.assertEqual(names, {"Greeting flow test", "Webchat smoke test"})
+
+    def test_filter_by_single_tag(self):
+        """Filtering by a tag only present on one test returns that test."""
+        result = self.project.resolve_tests(tags=["booking"])
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, "Greeting flow test")
+
+    def test_filter_by_shared_tag(self):
+        """Filtering by a tag shared across tests returns all matching tests."""
+        result = self.project.resolve_tests(tags=["smoke"])
+        self.assertEqual(len(result), 2)
+
+    def test_filter_by_multiple_tags_is_or(self):
+        """Passing multiple tags matches tests that have any of them."""
+        result = self.project.resolve_tests(tags=["booking", "smoke"])
+        self.assertEqual(len(result), 2)
+
+    def test_filter_by_file_path(self):
+        """Filtering by file_path matches the test with that path."""
+        target = self.project.resolve_tests(all_tests=True)[0]
+        result = self.project.resolve_tests(files=[target.file_path])
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].resource_id, target.resource_id)
+
+    def test_no_criteria_raises(self):
+        """Passing no filters raises ValueError."""
+        with self.assertRaises(ValueError, msg="No tests found"):
+            self.project.resolve_tests()
+
+    def test_unmatched_tag_raises(self):
+        """A tag that matches nothing raises ValueError."""
+        with self.assertRaises(ValueError, msg="No tests found"):
+            self.project.resolve_tests(tags=["nonexistent"])
+
+    def test_unmatched_file_raises(self):
+        """A file path that matches nothing raises ValueError."""
+        with self.assertRaises(ValueError, msg="No tests found"):
+            self.project.resolve_tests(files=["no_such_test.yaml"])
+
+    def test_all_takes_precedence_over_tags(self):
+        """When all_tests=True, tags are ignored and all tests are returned."""
+        result = self.project.resolve_tests(all_tests=True, tags=["booking"])
+        self.assertEqual(len(result), 2)
+
+
 if __name__ == "__main__":
     unittest.main()
