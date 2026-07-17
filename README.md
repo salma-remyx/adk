@@ -214,6 +214,36 @@ poly docs {documentation (e.g topics)}
 poly docs --output doc_file.md
 ```
 
+## Adaptive A/B test allocation
+
+For deployment A/B tests, `poly.ab_test_bandit` offers a multi-armed-bandit
+recommender that turns observed per-deployment interaction signal into the next
+decision: how much traffic to route to the variant, and which version to
+declare the winner. It uses Thompson sampling over a Beta posterior, so a
+promising variant is progressively awarded more traffic while under-performing
+versions are queried sparingly — minimising the interaction cost of finding the
+best deployment.
+
+```python
+from poly.ab_test_bandit import (
+    recommend_traffic_split,
+    recommend_winner,
+    stats_from_rewards,
+)
+
+# rewards per deployment version, each in [0, 1] (e.g. conversation success)
+stats = stats_from_rewards({"dep-live": [0, 1, 0, 0], "dep-variant": [1, 1, 1, 0]})
+
+traffic = recommend_traffic_split(stats, "dep-variant")  # feeds `ab-test update`
+winner = recommend_winner(stats)                          # feeds `ab-test end`
+```
+
+The recommender only computes suggestions for the existing `ab-test update`
+(`traffic_percentage`) and `ab-test end` (`chosen_version`) commands — it does
+not call the platform itself. Adapted from Yang et al., "A Multi-Armed Bandit
+Approach to Online Selection and Evaluation of Generative Models"
+([arXiv:2406.07451](https://arxiv.org/abs/2406.07451)).
+
 ## Bugs & Feature Requests
 
 Please report bugs or request features via the [GitHub Issues](https://github.com/PolyAI/adk/issues) page.
