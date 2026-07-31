@@ -225,3 +225,20 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style, and co
 ## License
 
 This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
+
+## A/B test analysis
+
+`poly.ab_test_metrics` is an offline analysis helper for results collected with `poly deployments ab-test`. A North Star metric (retention, revenue, ...) is often delayed and noisy, which inflates the sample size an A/B test needs before it can reach a decision. Given per-arm outcome observations and optional pre-experiment covariates measured on the same units, the helper learns the closed-form variance-minimising adjustment and reports the power-maximised proxy metric alongside the raw one, so the same experiment can be decided with fewer samples.
+
+```python
+from poly.ab_test_metrics import power_maximised_metric
+
+result = power_maximised_metric(
+    ab_test_record,
+    outcomes_by_arm={"control": control_outcomes, "variant": variant_outcomes},
+    covariates_by_arm={"control": [pre_covariate], "variant": [pre_covariate]},
+)
+result.variance_reduction  # fraction of effect-variance removed
+result.sample_acceleration  # factor by which required sample size shrinks
+result.adjusted.p_value  # accelerated decision statistic
+```
