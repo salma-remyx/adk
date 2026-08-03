@@ -15,7 +15,12 @@ observed_landing_zones:
     call_site_specifics: (none)
     branch: learning-metrics-that-maximise-power-for-accelerated-a-b-tes
     timestamp: '2026-07-31T19:51:16Z'
-  last_observed: '2026-07-31T19:51:16Z'
+  - arxiv: 2607.28617v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: (none)
+    branch: aispa-user-centric-system-prompt-auditing-for-large-language
+    timestamp: '2026-08-03T05:44:45Z'
+  last_observed: '2026-08-03T05:44:45Z'
 rejected_shapes:
 - shape_tag: null
   reason_code: null
@@ -24,4 +29,4 @@ rejected_shapes:
   - arxiv: 2607.05391v1
     timestamp: '2026-07-18T17:35:53Z'
 coordination_signals: []
-last_updated: '2026-07-31T19:51:16Z'
+last_updated: '2026-08-03T05:44:45Z'
