@@ -214,6 +214,27 @@ poly docs {documentation (e.g topics)}
 poly docs --output doc_file.md
 ```
 
+## System prompt audit
+
+ADK ships a library-level audit (`poly.system_prompt_audit`) that applies a
+user-centric taxonomy -- adapted from *AISPA: User-Centric System Prompt
+Auditing for Large Language Model Applications* -- to an agent's system prompt
+(the combined personality, role and rules text). It splits the prompt into
+instructions and labels each as protective or problematic across eight
+dimensions (identity & transparency, privacy, safety, fairness, honesty, user
+autonomy, confidentiality, accountability), then reports dimension coverage and
+the problematic instructions it found.
+
+```python
+from poly.system_prompt_audit import audit_agent_settings
+
+report = audit_agent_settings(
+    personality=personality_text, role=role_text, rules=rules_text
+)
+print(report.summary())  # instruction/protective/problematic counts + coverage
+print(report.problematic_instructions)
+```
+
 ## Bugs & Feature Requests
 
 Please report bugs or request features via the [GitHub Issues](https://github.com/PolyAI/adk/issues) page.
