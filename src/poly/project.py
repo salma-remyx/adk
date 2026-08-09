@@ -17,6 +17,7 @@ from typing import Any, Optional, TypeAlias
 
 from google.protobuf.message import Message
 
+import poly.readiness as readiness
 import poly.resources.resource_utils as resource_utils
 import poly.utils as utils
 from poly.handlers.interface import (
@@ -1210,6 +1211,23 @@ class AgentStudioProject:
             if validation_errors:
                 error_messages = "\n".join(validation_errors)
                 return False, f"Validation errors detected:\n{error_messages}", []
+
+            # Continuous-assurance readiness check (non-blocking): surface a
+            # dependency-map verdict for dangling cross-resource references
+            # before push. Diagnostics only; push success/message are unchanged.
+            try:
+                readiness_findings = self.assess_readiness(
+                    resources_dict=new_state, resource_mappings=local_resource_mappings
+                )
+                if readiness_findings:
+                    logger.warning(
+                        "Readiness check before push found %d unresolved "
+                        "dependency reference(s):\n%s",
+                        len(readiness_findings),
+                        readiness.format_readiness_report(readiness_findings),
+                    )
+            except Exception:
+                logger.debug("Readiness check skipped", exc_info=True)
 
         commands = self._stage_commands(
             new_state, new_resources, updated_resources, deleted_resources
@@ -2758,6 +2776,31 @@ class AgentStudioProject:
                 validation_errors.append(f"Validation error: {e}")
 
         return validation_errors
+
+    @staticmethod
+    def assess_readiness(
+        resources_dict: ResourceMap,
+        resource_mappings: list[ResourceMapping],
+    ) -> list[readiness.ReadinessFinding]:
+        """Run a continuous-assurance readiness check over project resources.
+
+        Builds a cross-resource dependency map and reports readiness findings
+        (e.g. dangling references) with actionable diagnostics. Non-blocking:
+        returns findings for the caller to surface; does not raise.
+
+        Adapted from "Toward Continuous Assurance for the Democratization of AI
+        Agent Creation in Industry" (arXiv:2607.21495v1). Reuses the existing
+        ResourceMap / ResourceMapping contract rather than introducing a new
+        data shape.
+
+        Args:
+            resources_dict (ResourceMap): Loaded resources keyed by type and id.
+            resource_mappings (list[ResourceMapping]): Declared resource mappings.
+
+        Returns:
+            list[readiness.ReadinessFinding]: Readiness findings (empty if ready).
+        """
+        return readiness.assess_readiness(resources_dict, resource_mappings)
 
     def merge_branch(
         self, message: str, conflict_resolutions: list[dict[str, Any]] = None

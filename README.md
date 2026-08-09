@@ -225,3 +225,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style, and co
 ## License
 
 This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
+
+## Continuous-assurance readiness check
+
+`poly push` runs a lightweight readiness check before changes are sent to Agent Studio. It builds a cross-resource dependency map (functions → flows, tests → functions, functions → variables) and warns about any reference that points to a resource not present in the project (a dangling reference). The check is non-blocking: it surfaces diagnostics in the log without changing what is pushed. The same check is available to callers via `AgentStudioProject.assess_readiness`. Adapted from "Toward Continuous Assurance for the Democratization of AI Agent Creation in Industry" (arXiv:2607.21495v1).
