@@ -20,7 +20,14 @@ observed_landing_zones:
     call_site_specifics: (none)
     branch: aispa-user-centric-system-prompt-auditing-for-large-language
     timestamp: '2026-08-03T05:44:45Z'
-  last_observed: '2026-08-03T05:44:45Z'
+  - arxiv: 2607.21495v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: '`AgentStudioProject.push_project` validate loop (reached
+      from the `poly push` CLI command via `poly.cli:main`, which calls `push_project`
+      at cli.py:2796/3313/3983); the new call sits at project.py:121'
+    branch: toward-continuous-assurance-for-the-democratization-of-ai-ag
+    timestamp: '2026-08-09T14:22:09Z'
+  last_observed: '2026-08-09T14:22:09Z'
 rejected_shapes:
 - shape_tag: null
   reason_code: null
@@ -35,4 +42,4 @@ rejected_shapes:
   - arxiv: 2607.28617v1
     timestamp: '2026-08-08T02:12:52Z'
 coordination_signals: []
-last_updated: '2026-08-08T02:12:52Z'
+last_updated: '2026-08-09T14:22:09Z'
