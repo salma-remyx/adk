@@ -27,7 +27,14 @@ observed_landing_zones:
       at cli.py:2796/3313/3983); the new call sits at project.py:121'
     branch: toward-continuous-assurance-for-the-democratization-of-ai-ag
     timestamp: '2026-08-09T14:22:09Z'
-  last_observed: '2026-08-09T14:22:09Z'
+  - arxiv: 2607.22445v1
+    mode: Mode 2 (adapted port)
+    call_site_specifics: AgentStudioProject.validate_project() in src/poly/project.py,
+      reached from the `poly validate` CLI command (poly.cli:main -> AgentStudioCLI.validate_project
+      -> project.validate_project -> evaluate_cap
+    branch: dynamic-capability-scoping-for-enterprise-ai-agents-a-synthe
+    timestamp: '2026-08-10T07:10:56Z'
+  last_observed: '2026-08-10T07:10:56Z'
 rejected_shapes:
 - shape_tag: null
   reason_code: null
@@ -42,4 +49,4 @@ rejected_shapes:
   - arxiv: 2607.28617v1
     timestamp: '2026-08-08T02:12:52Z'
 coordination_signals: []
-last_updated: '2026-08-09T14:22:09Z'
+last_updated: '2026-08-10T07:10:56Z'
