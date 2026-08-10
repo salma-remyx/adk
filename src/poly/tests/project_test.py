@@ -2185,6 +2185,41 @@ class ValidateProjectTest(unittest.TestCase):
         self.assertIn("Start step 'missing_step' not found.", errors[1])
 
 
+class CapabilityScopeIntegrationTest(unittest.TestCase):
+    """Integration tests for the dynamic capability-scope validate hook.
+
+    Exercises the wiring in ``AgentStudioProject.validate_project()`` against
+    the real ``test_project`` fixture. Adapted from arXiv:2607.22445v1
+    (Mode 2): a global function the agent holds but no task flow, rule, or
+    topic consumes is flagged as persistent over-privilege.
+    """
+
+    # A GLOBAL function in the fixture referenced by no {{fn:...}} token
+    # anywhere -> a genuine over-privilege case.
+    UNREFERENCED_FUNCTION = "test_function_with_parameters"
+
+    def test_enforce_mode_flags_unreferenced_global_function(self):
+        with patch.dict(os.environ, {"POLY_CAPABILITY_SCOPE_ENFORCE": "1"}):
+            project = AgentStudioProject.from_dict(PROJECT_DATA, TEST_DIR)
+            errors = project.validate_project()
+        scope_errors = [e for e in errors if e.startswith("Capability scope:")]
+        self.assertTrue(
+            any(self.UNREFERENCED_FUNCTION in e for e in scope_errors),
+            f"Expected an over-privilege finding for {self.UNREFERENCED_FUNCTION}, "
+            f"got: {scope_errors}",
+        )
+
+    def test_observe_only_does_not_block_push(self):
+        # In observe-only mode (default), findings are logged as a behavioral
+        # signal and must NOT surface as push-blocking validation errors.
+        with patch.dict(os.environ, {"POLY_CAPABILITY_SCOPE_ENFORCE": ""}):
+            project = AgentStudioProject.from_dict(PROJECT_DATA, TEST_DIR)
+            errors = project.validate_project()
+        scope_errors = [e for e in errors if e.startswith("Capability scope:")]
+        self.assertEqual(scope_errors, [])
+
+
+
 class PullProjectTest(unittest.TestCase):
     """Tests for the pull_project method"""
 

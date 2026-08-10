@@ -168,6 +168,16 @@ Validate project configuration locally:
 poly validate
 ```
 
+`poly validate` also runs a capability-scope pass that flags global
+functions the agent holds but no flow step, rule, or topic consumes
+(persistent over-privilege). This is **observe-only** by default: findings
+are logged as warnings and do not block validation. Set the following
+environment variables to change its behavior:
+
+- `POLY_CAPABILITY_SCOPE_ENFORCE=1` — promote findings to push-blocking errors.
+- `POLY_CAPABILITY_SCOPE_DENY=kw1,kw2` — additionally flag global functions
+  whose name contains any of these prohibited-capability keywords.
+
 ### `poly review`
 
 Create a GitHub gist for reviewing changes, similar to a pull request:

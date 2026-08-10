@@ -70,6 +70,7 @@ from poly.resources import (
     VoiceSafetyFilters,
     VoiceStylePrompt,
 )
+from poly.capability_scope import evaluate_capability_scope
 from poly.resources.resource import _parse_multi_resource_path
 from poly.utils import compute_variable_references
 
@@ -2707,10 +2708,16 @@ class AgentStudioProject:
                 resource_mapping.resource_id
             ] = local_resource
 
-        return self.validate_resources(
+        validation_errors = self.validate_resources(
             resources_dict=resources,
             resource_mappings=local_resource_mappings,
         )
+        # Dynamic capability scoping: flag global functions the agent holds but
+        # no task flow/rule/topic consumes (persistent over-privilege). Observe-
+        # only by default; POLY_CAPABILITY_SCOPE_ENFORCE=1 promotes findings to
+        # push-blocking errors.
+        validation_errors.extend(evaluate_capability_scope(resources))
+        return validation_errors
 
     @staticmethod
     def validate_resources(
