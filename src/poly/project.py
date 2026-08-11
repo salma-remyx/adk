@@ -71,6 +71,7 @@ from poly.resources import (
     VoiceStylePrompt,
 )
 from poly.resources.resource import _parse_multi_resource_path
+from poly.tool_spec_safety import analyze_tool_spec_safety, log_findings
 from poly.utils import compute_variable_references
 
 logger = logging.getLogger(__name__)
@@ -2707,10 +2708,17 @@ class AgentStudioProject:
                 resource_mapping.resource_id
             ] = local_resource
 
-        return self.validate_resources(
+        validation_errors = self.validate_resources(
             resources_dict=resources,
             resource_mappings=local_resource_mappings,
         )
+
+        # SafeKeep-style advisory pass (non-blocking): flag tool specs whose
+        # schema-dominated shape is known to degrade downstream agent safety
+        # reasoning. Surfaced as warnings so it never changes the error contract.
+        log_findings(analyze_tool_spec_safety(resources), logger=logger)
+
+        return validation_errors
 
     @staticmethod
     def validate_resources(

@@ -168,6 +168,11 @@ Validate project configuration locally:
 poly validate
 ```
 
+`poly validate` also emits non-blocking tool-spec safety advisories when a
+function or API integration is schema-dominated (structured parameters or
+operations with little natural-language description) — a spec shape linked to
+weaker agent refusal behavior. These are warnings only and never block.
+
 ### `poly review`
 
 Create a GitHub gist for reviewing changes, similar to a pull request:
