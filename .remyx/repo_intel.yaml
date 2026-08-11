@@ -35,6 +35,16 @@ observed_landing_zones:
     branch: dynamic-capability-scoping-for-enterprise-ai-agents-a-synthe
     timestamp: '2026-08-10T07:10:56Z'
   last_observed: '2026-08-10T07:10:56Z'
+- path: src/poly/tests/
+  shape_tags:
+  - unclassified
+  confirmed_by:
+  - arxiv: 2607.29405v1
+    mode: ''
+    call_site_specifics: ''
+    branch: beyond-component-testing-validating-agentic-ai-systems
+    timestamp: '2026-08-11T00:15:16Z'
+  last_observed: '2026-08-11T00:15:16Z'
 rejected_shapes:
 - shape_tag: null
   reason_code: null
@@ -49,4 +59,4 @@ rejected_shapes:
   - arxiv: 2607.28617v1
     timestamp: '2026-08-08T02:12:52Z'
 coordination_signals: []
-last_updated: '2026-08-10T07:10:56Z'
+last_updated: '2026-08-11T00:15:16Z'
