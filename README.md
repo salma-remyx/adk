@@ -202,7 +202,15 @@ poly chat
 poly chat --environment live
 poly chat --channel webchat
 poly chat --metadata   # show functions, flows, and state each turn
+poly chat --metrics -m 'Book a table'   # score the conversation when it ends
 ```
+
+`--metrics` scores the finished conversation on multidimensional execution
+metrics — efficiency (turns answered), tool use (function calls per turn,
+distinct functions), planning (flow/step transitions), and error recovery
+(error rate plus how many erroring turns still answered) — printed as a
+summary panel, or attached to each conversation as a `metrics` key under
+`--json`.
 
 ### `poly docs`
 

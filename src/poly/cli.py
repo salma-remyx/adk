@@ -33,6 +33,7 @@ from poly.utils import (
 )
 import time
 
+from poly.execution_metrics import print_execution_metrics, score_conversation
 from poly.output.console import (
     console,
     error,
@@ -1059,6 +1060,16 @@ class AgentStudioCLI:
             help="Show all metadata (functions, flows, and state). Equivalent to --functions --flows --state.",
         )
         chat_parser.add_argument(
+            "--metrics",
+            action="store_true",
+            default=False,
+            help=(
+                "Score the conversation on multidimensional execution metrics "
+                "(efficiency, tool use, planning, error recovery) when it ends. "
+                "Implies --metadata and --json turns are enriched with a 'metrics' key."
+            ),
+        )
+        chat_parser.add_argument(
             "--push",
             action="store_true",
             default=False,
@@ -1636,6 +1647,7 @@ class AgentStudioCLI:
                     push_before_chat=args.push,
                     input_messages=input_messages,
                     conversation_id=args.conversation_id,
+                    metrics=args.metrics,
                     output_json=args.json,
                 )
 
@@ -3968,6 +3980,7 @@ class AgentStudioCLI:
         show_functions: bool = False,
         show_flow: bool = False,
         show_state: bool = False,
+        metrics: bool = False,
         output_json: bool = False,
         input_messages: Optional[list[str]] = None,
         conversation_id: Optional[str] = None,
@@ -3976,6 +3989,11 @@ class AgentStudioCLI:
         project = cls._load_project(base_path)
 
         json_output = {}
+
+        # Scoring needs the trace (function events, flow steps, state changes)
+        # in the turns, so --metrics turns on all metadata capture.
+        if metrics:
+            show_functions = show_flow = show_state = True
 
         if push_before_chat:
             if not output_json:
@@ -4108,10 +4126,16 @@ class AgentStudioCLI:
                 initial_response=response,
             )
 
-            if output_json:
+            if output_json or metrics:
                 conversations.append(conversation)
 
             if not restart:
+                if metrics:
+                    for conversation in conversations:
+                        scored = score_conversation(conversation)
+                        conversation["metrics"] = scored.to_dict()
+                        if not output_json:
+                            print_execution_metrics(scored)
                 if output_json:
                     json_output["conversations"] = conversations
                     json_print(json_output)
